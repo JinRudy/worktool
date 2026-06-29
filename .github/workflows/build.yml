@@ -1,0 +1,112 @@
+name: Build WorkTool APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Extract Version
+        id: version
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION_NAME=${TAG_NAME#v}
+          BUILD_TIME=$(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')
+          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "build_time=$BUILD_TIME" >> $GITHUB_OUTPUT
+          echo "Using tag: $TAG_NAME (version: $VERSION_NAME, build: $BUILD_TIME)"
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.tag_name }}
+          release_name: 素灵智能 ${{ steps.version.outputs.version_name }}
+          body: |
+            ## 更新内容
+            - 版本: ${{ steps.version.outputs.version_name }}
+            - 构建时间: ${{ steps.version.outputs.build_time }}
+            - Commit: ${{ github.event.head_commit.message }}
+          draft: false
+          prerelease: false
+
+      - name: Upload APK to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: app/build/outputs/apk/debug/sulingai-wza-${{ steps.version.outputs.version_name }}.apk
+          asset_name: sulingai-wza-${{ steps.version.outputs.version_name }}.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Upload APK as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: worktool-debug-apk
+          path: app/build/outputs/apk/debug/sulingai-wza-*.apk
+          retention-days: 30
+
+      - name: Prepare Pages
+        run: |
+          mkdir -p pages
+          cp app/build/outputs/apk/debug/sulingai-wza-${{ steps.version.outputs.version_name }}.apk \
+             pages/sulingai-wza-${{ steps.version.outputs.version_name }}.apk
+          # 同时保留 latest.apk 别名
+          cp app/build/outputs/apk/debug/sulingai-wza-${{ steps.version.outputs.version_name }}.apk \
+             pages/latest.apk
+          # 生成 version.json 用于 jsdelivr 加速读取
+          cat > pages/version.json << EOF
+          {
+            "version": "${{ steps.version.outputs.version_name }}",
+            "version_code": 30000,
+            "download_url": "https://sulingai-wza.minifog.org.cn/sulingai-wza-${{ steps.version.outputs.version_name }}.apk",
+            "release_notes": "版本 ${{ steps.version.outputs.version_name }} 更新"
+          }
+          EOF
+          echo "Pages files:"
+          ls -la pages/
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages/
+
+  deploy-pages:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

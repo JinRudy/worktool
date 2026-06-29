@@ -1,0 +1,50 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+
+android {
+    namespace 'org.yameida.worktool'
+    compileSdkVersion 30
+
+    defaultConfig {
+        applicationId "org.yameida.worktool"
+        minSdkVersion 24
+        targetSdkVersion 30
+        versionCode 30000
+        versionName "1.0.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    // APK 重命名: sulingai-wza-{version}.apk
+    applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+            def versionName = variant.versionName
+            def outputFileName = "sulingai-wza-${versionName}.apk"
+            output.outputFileName = outputFileName
+        }
+    }
+}
+
+dependencies {
+    implementation project(':baselibrary')
+    implementation project(':floatwindow')
+    implementation fileTree(dir: "libs", include: ["*.jar", "*.aar"])
+
+    //友盟统计SDK
+    implementation  'com.umeng.umsdk:common:9.4.7'// 必选
+    implementation  'com.umeng.umsdk:asms:1.4.1'// 必选
+    implementation 'com.umeng.umsdk:apm:1.5.2' // 错误分析升级为独立SDK，看crash数据请一定集成，可选
+}
