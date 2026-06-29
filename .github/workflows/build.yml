@@ -97,6 +97,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: pages/
+          name: github-pages-tag
 
   # 仅部署发布页（push to master 时执行，从 GitHub Release 拉取最新 APK）
   deploy-pages-only:
@@ -155,6 +156,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: pages/
+          name: github-pages-master
 
   # 部署 GitHub Pages（两个 job 完成后执行）
   deploy:
@@ -165,6 +167,14 @@ jobs:
       pages: write
       id-token: write
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - name: Deploy Pages (from build)
+        if: needs.build.result == 'success'
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-tag
+
+      - name: Deploy Pages (from master push)
+        if: needs.deploy-pages-only.result == 'success'
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-master
