@@ -121,19 +121,31 @@ jobs:
 
       - name: Prepare Pages
         run: |
-          cp index.html pages/index.html
+          # 确保 pages 目录存在
+          mkdir -p pages
+          # 复制发布页（如果存在）
+          if [ -f index.html ]; then
+            cp index.html pages/index.html
+            echo "Copied index.html"
+          else
+            echo "WARNING: index.html not found, creating a placeholder"
+            echo '<html><body><h1>WorkTool</h1><p>Latest APK: <a href="latest.apk">Download</a></p></body></html>' > pages/index.html
+          fi
+          # 从 GitHub Release 获取版本信息
           LATEST_RELEASE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             https://api.github.com/repos/${{ github.repository }}/releases/latest)
-          VERSION=$(echo "$LATEST_RELEASE" | jq -r '.tag_name // "unknown"')
-          if [ "$VERSION" != "null" ] && [ "$VERSION" != "" ]; then
+          if [ -n "$LATEST_RELEASE" ]; then
+            VERSION=$(echo "$LATEST_RELEASE" | jq -r '.tag_name // "unknown"')
             RELEASE_NOTES=$(echo "$LATEST_RELEASE" | jq -r '.body // ""')
-            cat > pages/version.json << EOF
-            {
-              "version": "${VERSION#v}",
-              "download_url": "https://sulingai-wza.minifog.org.cn/latest.apk",
-              "release_notes": "${RELEASE_NOTES}"
-            }
-            EOF
+            if [ "$VERSION" != "null" ] && [ "$VERSION" != "unknown" ] && [ -n "$VERSION" ]; then
+              cat > pages/version.json << EOF
+              {
+                "version": "${VERSION#v}",
+                "download_url": "https://sulingai-wza.minifog.org.cn/latest.apk",
+                "release_notes": "${RELEASE_NOTES}"
+              }
+              EOF
+            fi
           fi
           echo "Pages files:"
           ls -la pages/
