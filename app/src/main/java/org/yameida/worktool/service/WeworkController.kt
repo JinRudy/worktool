@@ -623,4 +623,13 @@ object WeworkController {
         return WeworkGetImpl.getCorpList(message)
     }
 
+    /**
+     * 调试：抓取当前页面元素并上报到 Python 服务器
+     */
+    @RequestMapping
+    fun debugDump(message: WeworkMessageBean) {
+        LogUtils.d("REQUEST debugDump()")
+        WeworkDebug.dumpPage(message)
+    }
+
 }

@@ -35,6 +35,10 @@ object WeworkLoopImpl {
             return
         mainLoopRunning = true
         try {
+            // 主循环启动时自动上报一次调试信息
+            if (Constant.useLocalMode && Constant.localCallbackUrl.isNotBlank()) {
+                thread(start = true) { WeworkDebug.dumpPage(WeworkMessageBean()) }
+            }
             while (mainLoopRunning) {
                 if (!isAtHome()) {
                     LogUtils.d("当前在房间: ")
@@ -45,6 +49,12 @@ object WeworkLoopImpl {
                     continue
                 }
                 if (!mainLoopRunning) break
+
+                // 每 100 次循环（约 30 秒）自动上报一次调试信息
+                if (logIndex % 100 == 0 && Constant.useLocalMode && Constant.localCallbackUrl.isNotBlank()) {
+                    thread(start = true) { WeworkDebug.dumpPage(WeworkMessageBean()) }
+                }
+
                 if (getChatroomList()) {
                     LogUtils.d("点击进入聊天页: ")
                     AccessibilityUtil.waitForPageMissing("WwMainActivity", "GlobalSearchActivity")
