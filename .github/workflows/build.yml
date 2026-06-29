@@ -46,29 +46,14 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug -PversionName=${{ steps.version.outputs.version_name }} -PversionCode=${{ steps.version.outputs.version_code }}
 
-      - name: Create GitHub Release
-        uses: actions/create-release@v1
-        id: create_release
+      - name: Create GitHub Release and Upload APK
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.version.outputs.tag_name }}
-          release_name: 素灵智能 ${{ steps.version.outputs.version_name }}
-          body: |
-            ## 版本 ${{ steps.version.outputs.version_name }}
-            - Commit: ${{ github.sha }}
-          draft: false
-          prerelease: false
-
-      - name: Upload APK to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: app/build/outputs/apk/debug/sulingai-wza-${{ steps.version.outputs.version_name }}.apk
-          asset_name: sulingai-wza-${{ steps.version.outputs.version_name }}.apk
-          asset_content_type: application/vnd.android.package-archive
+        run: |
+          gh release create ${{ steps.version.outputs.tag_name }} \
+            app/build/outputs/apk/debug/sulingai-wza-${{ steps.version.outputs.version_name }}.apk \
+            --title "素灵智能 ${{ steps.version.outputs.version_name }}" \
+            --notes "## 版本 ${{ steps.version.outputs.version_name }}\n- Commit: ${{ github.sha }}"
 
       - name: Prepare Pages
         run: |
