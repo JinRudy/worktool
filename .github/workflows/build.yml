@@ -2,7 +2,6 @@ name: Build WorkTool APK & Deploy Pages
 
 on:
   push:
-    branches: ["master"]
     tags:
       - 'v*'
   workflow_dispatch:
@@ -13,8 +12,8 @@ permissions:
   id-token: write
 
 jobs:
-  # 构建 APK（仅 tag push 时执行）
-  build:
+  # 构建 APK + 部署 Pages（tag push 时执行）
+  build-and-deploy:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
@@ -27,14 +26,11 @@ jobs:
           VERSION_NAME=${TAG_NAME#v}
           echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-          echo "Using tag: $TAG_NAME (version: $VERSION_NAME)"
-          # 计算 versionCode: 30000 + major*100 + minor*10 + patch
           MAJOR=$(echo "$VERSION_NAME" | cut -d. -f1)
           MINOR=$(echo "$VERSION_NAME" | cut -d. -f2)
           PATCH=$(echo "$VERSION_NAME" | cut -d. -f3)
           VERSION_CODE=$((30000 + MAJOR * 100 + MINOR * 10 + PATCH))
           echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
-          echo "Computed versionCode: $VERSION_CODE from $VERSION_NAME"
 
       - name: Set up JDK 11
         uses: actions/setup-java@v4
@@ -74,13 +70,6 @@ jobs:
           asset_name: sulingai-wza-${{ steps.version.outputs.version_name }}.apk
           asset_content_type: application/vnd.android.package-archive
 
-      - name: Upload APK as Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: worktool-debug-apk
-          path: app/build/outputs/apk/debug/sulingai-wza-*.apk
-          retention-days: 30
-
       - name: Prepare Pages
         run: |
           mkdir -p pages
@@ -90,19 +79,23 @@ jobs:
              pages/latest.apk
           cp index.html pages/index.html
           printf '{"version":"${{ steps.version.outputs.version_name }}","version_code":${{ steps.version.outputs.version_code }},"download_url":"https://sulingai-wza.minifog.org.cn/sulingai-wza-${{ steps.version.outputs.version_name }}.apk","release_notes":"版本 ${{ steps.version.outputs.version_name }} 更新"}\n' > pages/version.json
-          echo "Pages files:"
           ls -la pages/
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: pages/
-          name: github-pages-tag
 
-  # 仅部署发布页（push to master 或手动触发时执行，从 GitHub Release 拉取最新 APK）
-  deploy-pages-only:
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
+      - name: Deploy Pages
+        uses: actions/deploy-pages@v4
+
+  # 仅重新部署发布页（手动触发，从 GitHub Release 拉取最新 APK）
+  redeploy-pages:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -116,65 +109,34 @@ jobs:
           if [ -n "$APK_NAME" ] && [ -n "$APK_URL" ]; then
             curl -sL -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$APK_URL" -o "pages/$APK_NAME"
             cp "pages/$APK_NAME" "pages/latest.apk"
-            echo "Fetched: $APK_NAME from Release"
+            echo "Fetched: $APK_NAME"
           else
             echo "WARNING: No APK found in latest release"
           fi
 
       - name: Prepare Pages
         run: |
-          # 确保 pages 目录存在
           mkdir -p pages
-          # 复制发布页（如果存在）
-          if [ -f index.html ]; then
-            cp index.html pages/index.html
-            echo "Copied index.html"
-          else
-            echo "WARNING: index.html not found, creating a placeholder"
-            echo '<html><body><h1>WorkTool</h1><p>Latest APK: <a href="latest.apk">Download</a></p></body></html>' > pages/index.html
-          fi
-          # 从 GitHub Release 获取版本信息
+          cp index.html pages/index.html
           LATEST_RELEASE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             https://api.github.com/repos/${{ github.repository }}/releases/latest)
-          if [ -n "$LATEST_RELEASE" ]; then
-            VERSION=$(echo "$LATEST_RELEASE" | jq -r '.tag_name // "unknown"')
-            RELEASE_NOTES=$(echo "$LATEST_RELEASE" | jq -r '.body // ""')
-            if [ "$VERSION" != "null" ] && [ "$VERSION" != "unknown" ] && [ -n "$VERSION" ]; then
-              VERSION_NO_V="${VERSION#v}"
-              MAJOR=$(echo "$VERSION_NO_V" | cut -d. -f1)
-              MINOR=$(echo "$VERSION_NO_V" | cut -d. -f2)
-              PATCH=$(echo "$VERSION_NO_V" | cut -d. -f3)
-              VERSION_CODE=$((30000 + MAJOR * 100 + MINOR * 10 + PATCH))
-              printf '{"version":"%s","version_code":%d,"download_url":"https://sulingai-wza.minifog.org.cn/latest.apk","release_notes":"%s"}\n' \
-                "$VERSION_NO_V" "$VERSION_CODE" "$(echo "$RELEASE_NOTES" | head -1)" > pages/version.json
-            fi
+          VERSION=$(echo "$LATEST_RELEASE" | jq -r '.tag_name // "unknown"')
+          RELEASE_NOTES=$(echo "$LATEST_RELEASE" | jq -r '.body // ""')
+          if [ "$VERSION" != "null" ] && [ "$VERSION" != "unknown" ] && [ -n "$VERSION" ]; then
+            VERSION_NO_V="${VERSION#v}"
+            MAJOR=$(echo "$VERSION_NO_V" | cut -d. -f1)
+            MINOR=$(echo "$VERSION_NO_V" | cut -d. -f2)
+            PATCH=$(echo "$VERSION_NO_V" | cut -d. -f3)
+            VERSION_CODE=$((30000 + MAJOR * 100 + MINOR * 10 + PATCH))
+            printf '{"version":"%s","version_code":%d,"download_url":"https://sulingai-wza.minifog.org.cn/latest.apk","release_notes":"%s"}\n' \
+              "$VERSION_NO_V" "$VERSION_CODE" "$(echo "$RELEASE_NOTES" | head -1)" > pages/version.json
           fi
-          echo "Pages files:"
           ls -la pages/
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: pages/
-          name: github-pages-master
 
-  # 部署 GitHub Pages（两个 job 完成后执行）
-  deploy:
-    needs: [build, deploy-pages-only]
-    if: always() && (needs.build.result == 'success' || needs.deploy-pages-only.result == 'success')
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    steps:
-      - name: Deploy Pages (from build)
-        if: needs.build.result == 'success'
+      - name: Deploy Pages
         uses: actions/deploy-pages@v4
-        with:
-          artifact_name: github-pages-tag
-
-      - name: Deploy Pages (from master push)
-        if: needs.deploy-pages-only.result == 'success' && !startsWith(github.ref, 'refs/tags/')
-        uses: actions/deploy-pages@v4
-        with:
-          artifact_name: github-pages-master
