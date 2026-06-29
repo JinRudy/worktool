@@ -23,6 +23,7 @@ object BotWebSocketClient {
 
     private var socket: WebSocket? = null
     private var connected = false
+    private var heartbeatThread: Thread? = null
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
         .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
@@ -60,6 +61,7 @@ object BotWebSocketClient {
                 connected = true
                 LogUtils.i("BotWebSocket 连接成功")
                 startFlushThread()
+                startHeartbeat()
                 // WebSocket 连上后立即注册客户端信息
                 thread(start = true) { register() }
             }
@@ -74,6 +76,7 @@ object BotWebSocketClient {
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                 connected = false
+                heartbeatThread = null
                 LogUtils.i("BotWebSocket 连接关闭: $code $reason")
                 flushThread = null
                 // 3秒后重连
@@ -101,6 +104,7 @@ object BotWebSocketClient {
      */
     fun disconnect() {
         connected = false
+        heartbeatThread = null
         flushThread = null
         try {
             socket?.close(1000, "disconnect")
@@ -143,6 +147,58 @@ object BotWebSocketClient {
             LogUtils.i("BotWebSocket 注册响应: ${response.code()} $body")
         } catch (e: Exception) {
             LogUtils.e("BotWebSocket 注册失败", e)
+        }
+    }
+
+    /**
+     * 启动心跳线程 - 每 30 秒通过 HTTP POST 更新服务端心跳
+     */
+    private fun startHeartbeat() {
+        if (heartbeatThread?.isAlive == true) return
+        heartbeatThread = thread(start = true) {
+            while (connected) {
+                try {
+                    Thread.sleep(30000)  // 30 秒心跳
+                    sendHeartbeat()
+                } catch (e: InterruptedException) {
+                    break
+                } catch (e: Exception) {
+                    LogUtils.e("BotWebSocket 心跳异常", e)
+                }
+            }
+        }
+    }
+
+    /**
+     * 发送心跳到服务端 HTTP API
+     */
+    private fun sendHeartbeat() {
+        try {
+            val baseUrl = Constant.localCallbackUrl
+            val heartbeatUrl = "$baseUrl/api/client/heartbeat"
+            val json = JSONObject()
+            json.put("robot_id", Constant.robotId)
+            json.put("client_ip", getLanIp())
+            json.put("client_port", Constant.localHttpPort)
+
+            val request = okhttp3.Request.Builder()
+                .url(heartbeatUrl)
+                .post(okhttp3.RequestBody.create(
+                    okhttp3.MediaType.parse("application/json; charset=utf-8"),
+                    json.toString()
+                ))
+                .build()
+
+            val response = client.newCall(request).execute()
+            val code = response.code()
+            val body = response.body()?.string() ?: ""
+            if (code == 200) {
+                LogUtils.i("BotWebSocket 心跳成功")
+            } else {
+                LogUtils.w("BotWebSocket 心跳失败: HTTP $code $body")
+            }
+        } catch (e: Exception) {
+            LogUtils.e("BotWebSocket 心跳异常", e)
         }
     }
 
