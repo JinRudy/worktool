@@ -66,13 +66,7 @@ jobs:
           printf '{"version":"${{ steps.version.outputs.version_name }}","version_code":${{ steps.version.outputs.version_code }},"download_url":"https://sulingai-wza.minifog.org.cn/sulingai-wza-${{ steps.version.outputs.version_name }}.apk","release_notes":"版本 ${{ steps.version.outputs.version_name }} 更新"}\n' > pages/version.json
           # 生成高分辨率二维码（与企业微信主题色一致）
           pip install --quiet qrcode[pil]
-          python3 -c "
-import qrcode
-qr = qrcode.QRCode(version=5, box_size=12, border=2, error_correction=qrcode.constants.ERROR_CORRECT_H)
-qr.add_data('https://sulingai-wza.minifog.org.cn/sulingai-wza-${{ steps.version.outputs.version_name }}.apk')
-qr.make(fit=True)
-qr.make_image(fill_color='#1e1b4b', back_color='#ffffff').save('pages/latest-qr.png')
-"
+          python3 -c "import qrcode; qr=qrcode.QRCode(version=5, box_size=12, border=2, error_correction=qrcode.constants.ERROR_CORRECT_H); qr.add_data('https://sulingai-wza.minifog.org.cn/sulingai-wza-${{ steps.version.outputs.version_name }}.apk'); qr.make(fit=True); qr.make_image(fill_color='#1e1b4b', back_color='#ffffff').save('pages/latest-qr.png')"
           ls -la pages/
 
       - name: Upload Pages Artifact
@@ -126,13 +120,7 @@ qr.make_image(fill_color='#1e1b4b', back_color='#ffffff').save('pages/latest-qr.
               "$VERSION_NO_V" "$VERSION_CODE" "$(echo "$RELEASE_NOTES" | head -1)" > pages/version.json
             # 生成高分辨率二维码（与企业微信主题色一致）
             pip install --quiet qrcode[pil]
-            python3 -c "
-import qrcode
-qr = qrcode.QRCode(version=5, box_size=12, border=2, error_correction=qrcode.constants.ERROR_CORRECT_H)
-qr.add_data('https://sulingai-wza.minifog.org.cn/latest.apk')
-qr.make(fit=True)
-qr.make_image(fill_color='#1e1b4b', back_color='#ffffff').save('pages/latest-qr.png')
-"
+            python3 -c "import qrcode; qr=qrcode.QRCode(version=5, box_size=12, border=2, error_correction=qrcode.constants.ERROR_CORRECT_H); qr.add_data('https://sulingai-wza.minifog.org.cn/latest.apk'); qr.make(fit=True); qr.make_image(fill_color='#1e1b4b', back_color='#ffffff').save('pages/latest-qr.png')"
           fi
           ls -la pages/
 
