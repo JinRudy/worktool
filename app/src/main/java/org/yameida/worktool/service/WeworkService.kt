@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.FileObserver
+import android.os.Message
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import com.blankj.utilcode.util.*
@@ -14,6 +15,7 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import org.yameida.worktool.Constant
 import org.yameida.worktool.Demo
+import org.yameida.worktool.model.WeworkMessageBean
 import org.yameida.worktool.observer.MultiFileObserver
 import org.yameida.worktool.utils.*
 import java.lang.Exception
@@ -50,6 +52,14 @@ class WeworkService : AccessibilityService() {
         initObserver()
         //连接Bot WebSocket
         BotWebSocketClient.connect()
+        //本地模式下WebSocketManager被跳过，需主动启动消息接收主循环
+        if (Constant.useLocalMode && Constant.localCallbackUrl.isNotBlank()) {
+            LogUtils.i("本地模式：主动启动消息接收主循环")
+            MyLooper.getInstance().sendMessage(Message.obtain().apply {
+                what = WeworkMessageBean.LOOP_RECEIVE_NEW_MESSAGE
+                obj = WeworkMessageBean().apply { type = WeworkMessageBean.LOOP_RECEIVE_NEW_MESSAGE }
+            })
+        }
         //开发者可以在这里添加测试代码 启动时调用一次
         thread { Demo.test(AppUtils.isAppDebug()) }
 
