@@ -102,17 +102,47 @@ jobs:
         with:
           path: pages/
 
-  # 仅部署发布页（push to master 时执行，不需要构建 APK）
+  # 仅部署发布页（push to master 时执行，从 GitHub Release 拉取最新 APK）
   deploy-pages-only:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Prepare Pages
+      - name: Fetch Latest APK from Release
         run: |
           mkdir -p pages
+          # 从 GitHub Release 拉取最新 APK
+          LATEST_RELEASE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/releases/latest)
+          APK_NAME=$(echo "$LATEST_RELEASE" | jq -r '.assets[] | select(.name | endswith(".apk")) | .name' | head -1)
+          APK_URL=$(echo "$LATEST_RELEASE" | jq -r '.assets[] | select(.name | endswith(".apk")) | .browser_download_url' | head -1)
+          if [ -n "$APK_NAME" ] && [ -n "$APK_URL" ]; then
+            curl -sL -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$APK_URL" -o "pages/$APK_NAME"
+            echo "Fetched: $APK_NAME from Release"
+          else
+            echo "WARNING: No APK found in latest release"
+            # 如果没有 Release，用 placeholder 占位
+            echo "placeholder" > "pages/latest.apk"
+          fi
+
+      - name: Prepare Pages
+        run: |
           cp index.html pages/index.html
+          # 生成 version.json
+          LATEST_RELEASE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/releases/latest)
+          VERSION=$(echo "$LATEST_RELEASE" | jq -r '.tag_name // "unknown"')
+          if [ "$VERSION" != "null" ] && [ "$VERSION" != "" ]; then
+            RELEASE_NOTES=$(echo "$LATEST_RELEASE" | jq -r '.body // ""')
+            cat > pages/version.json << EOF
+            {
+              "version": "${VERSION#v}",
+              "download_url": "https://sulingai-wza.minifog.org.cn/latest.apk",
+              "release_notes": "${RELEASE_NOTES}"
+            }
+            EOF
+          fi
           echo "Pages files:"
           ls -la pages/
 
