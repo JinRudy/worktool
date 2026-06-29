@@ -174,7 +174,7 @@ jobs:
           artifact_name: github-pages-tag
 
       - name: Deploy Pages (from master push)
-        if: needs.deploy-pages-only.result == 'success'
+        if: needs.deploy-pages-only.result == 'success' && !startsWith(github.ref, 'refs/tags/')
         uses: actions/deploy-pages@v4
         with:
           artifact_name: github-pages-master
