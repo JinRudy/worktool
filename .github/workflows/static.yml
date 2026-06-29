@@ -1,4 +1,4 @@
-# Simple workflow for deploying static content to GitHub Pages
+# 部署发布页（项目介绍 + 版本下载列表）到 GitHub Pages
 name: Deploy static content to Pages
 
 on:

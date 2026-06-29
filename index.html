@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>素灵智能 WorkTool - 微信自动化客户端</title>
+    <style>
+        :root {
+            --primary: #07c160;
+            --primary-dark: #06a854;
+            --bg: #0b1420;
+            --bg-card: #152238;
+            --bg-card-hover: #1a2d4a;
+            --text: #e8edf5;
+            --text-secondary: #8899aa;
+            --border: #1e3a5f;
+            --accent-blue: #3b82f6;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 60px 20px 40px;
+        }
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+        }
+        .hero p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Features */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin: 40px 0;
+        }
+        .feature {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .feature:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+        }
+        .feature .icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+        .feature h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .feature p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        /* Downloads Section */
+        .downloads {
+            margin-top: 50px;
+        }
+        .downloads h2 {
+            font-size: 1.5rem;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .downloads h2 span {
+            color: var(--primary);
+        }
+
+        .release-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+        .release-card:hover {
+            border-color: var(--primary);
+        }
+        .release-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        .release-tag {
+            background: var(--primary);
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .release-date {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+        .release-body {
+            padding: 16px 20px;
+        }
+        .release-body p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            white-space: pre-line;
+        }
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--primary);
+            color: #000;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+        .download-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #ff6b6b;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+        .footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .footer a:hover { text-decoration: underline; }
+
+        @media (max-width: 600px) {
+            .hero h1 { font-size: 1.8rem; }
+            .hero p { font-size: 0.95rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1>素灵智能 WorkTool</h1>
+            <p>微信自动化客户端，基于 Android 无障碍服务实现，无需 Root 权限，兼容 99% 安卓机型。支持收发消息、建群、拉人踢人等自动化操作。</p>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <div class="icon">🤖</div>
+                <h3>无人值守</h3>
+                <p>24小时自动运行，无需人工干预</p>
+            </div>
+            <div class="feature">
+                <div class="icon">📱</div>
+                <h3>兼容性强</h3>
+                <p>兼容 99% 安卓机型，无需 Root</p>
+            </div>
+            <div class="feature">
+                <div class="icon">🔒</div>
+                <h3>安全合规</h3>
+                <p>基于官方无障碍服务，无 Hook 无侵入</p>
+            </div>
+            <div class="feature">
+                <div class="icon">⚡</div>
+                <h3>API 驱动</h3>
+                <p>提供完整 API 接口，灵活集成</p>
+            </div>
+        </div>
+
+        <div class="downloads">
+            <h2>📥 <span>版本下载</span></h2>
+            <div id="releases">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>
+                <a href="https://github.com/JinRudy/worktool" target="_blank">📦 GitHub</a> ·
+                <a href="https://worktool.apifox.cn/doc-850007" target="_blank">📝 API 文档</a> ·
+                <a href="https://www.ymdyes.cn/contact" target="_blank">💬 合作申请</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        async function loadReleases() {
+            const container = document.getElementById('releases');
+            try {
+                const response = await fetch('https://api.github.com/repos/JinRudy/worktool/releases');
+                if (!response.ok) throw new Error('Failed to fetch');
+                const releases = await response.json();
+
+                if (releases.length === 0) {
+                    container.innerHTML = '<div class="error">暂无可用版本</div>';
+                    return;
+                }
+
+                let html = '';
+                for (const release of releases) {
+                    const assets = release.assets || [];
+                    const apkAsset = assets.find(a => a.name.endsWith('.apk')) || assets[0];
+                    const downloadUrl = apkAsset ? apkAsset.browser_download_url : null;
+                    const dateStr = new Date(release.published_at).toLocaleDateString('zh-CN', {
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                    const bodyLines = release.body ? release.body.split('\n').filter(line => !line.startsWith('**GitHub Release') && !line.startsWith('**GitHub Pages') && !line.match(/!\[QR\]/) && !line.match(/^https?:/)).slice(0, 5).join('\n') : '';
+
+                    html += `
+                        <div class="release-card">
+                            <div class="release-header">
+                                <span class="release-tag">${release.tag_name}</span>
+                                <span class="release-date">${dateStr}</span>
+                            </div>
+                            <div class="release-body">
+                                ${bodyLines ? `<p>${bodyLines}</p>` : ''}
+                                ${downloadUrl ? `<a href="${downloadUrl}" target="_blank" class="download-btn">📥 下载 APK</a>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }
+                container.innerHTML = html;
+            } catch (err) {
+                container.innerHTML = `<div class="error">加载失败：${err.message}<br><br>
+                    备用下载：<a href="https://github.com/JinRudy/worktool/releases" target="_blank">GitHub Releases</a></div>`;
+            }
+        }
+        loadReleases();
+    </script>
+</body>
+</html>
