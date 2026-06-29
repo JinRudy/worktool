@@ -28,6 +28,13 @@ jobs:
           echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
           echo "Using tag: $TAG_NAME (version: $VERSION_NAME)"
+          # 计算 versionCode: 30000 + major*100 + minor*10 + patch
+          MAJOR=$(echo "$VERSION_NAME" | cut -d. -f1)
+          MINOR=$(echo "$VERSION_NAME" | cut -d. -f2)
+          PATCH=$(echo "$VERSION_NAME" | cut -d. -f3)
+          VERSION_CODE=$((30000 + MAJOR * 100 + MINOR * 10 + PATCH))
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "Computed versionCode: $VERSION_CODE from $VERSION_NAME"
 
       - name: Set up JDK 11
         uses: actions/setup-java@v4
@@ -41,7 +48,7 @@ jobs:
       - name: Build APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug -PversionName=${{ steps.version.outputs.version_name }}
+          ./gradlew assembleDebug -PversionName=${{ steps.version.outputs.version_name }} -PversionCode=${{ steps.version.outputs.version_code }}
 
       - name: Create GitHub Release
         uses: actions/create-release@v1
@@ -82,7 +89,7 @@ jobs:
           cp app/build/outputs/apk/debug/sulingai-wza-${{ steps.version.outputs.version_name }}.apk \
              pages/latest.apk
           cp index.html pages/index.html
-          printf '{"version":"${{ steps.version.outputs.version_name }}","download_url":"https://sulingai-wza.minifog.org.cn/sulingai-wza-${{ steps.version.outputs.version_name }}.apk","release_notes":"版本 ${{ steps.version.outputs.version_name }} 更新"}\n' > pages/version.json
+          printf '{"version":"${{ steps.version.outputs.version_name }}","version_code":${{ steps.version.outputs.version_code }},"download_url":"https://sulingai-wza.minifog.org.cn/sulingai-wza-${{ steps.version.outputs.version_name }}.apk","release_notes":"版本 ${{ steps.version.outputs.version_name }} 更新"}\n' > pages/version.json
           echo "Pages files:"
           ls -la pages/
 
@@ -132,8 +139,13 @@ jobs:
             VERSION=$(echo "$LATEST_RELEASE" | jq -r '.tag_name // "unknown"')
             RELEASE_NOTES=$(echo "$LATEST_RELEASE" | jq -r '.body // ""')
             if [ "$VERSION" != "null" ] && [ "$VERSION" != "unknown" ] && [ -n "$VERSION" ]; then
-              printf '{"version":"%s","download_url":"https://sulingai-wza.minifog.org.cn/latest.apk","release_notes":"%s"}\n' \
-                "${VERSION#v}" "$(echo "$RELEASE_NOTES" | head -1)" > pages/version.json
+              VERSION_NO_V="${VERSION#v}"
+              MAJOR=$(echo "$VERSION_NO_V" | cut -d. -f1)
+              MINOR=$(echo "$VERSION_NO_V" | cut -d. -f2)
+              PATCH=$(echo "$VERSION_NO_V" | cut -d. -f3)
+              VERSION_CODE=$((30000 + MAJOR * 100 + MINOR * 10 + PATCH))
+              printf '{"version":"%s","version_code":%d,"download_url":"https://sulingai-wza.minifog.org.cn/latest.apk","release_notes":"%s"}\n' \
+                "$VERSION_NO_V" "$VERSION_CODE" "$(echo "$RELEASE_NOTES" | head -1)" > pages/version.json
             fi
           fi
           echo "Pages files:"

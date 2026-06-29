@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="@drawable/bg_gradient_main">
 
     <RelativeLayout
         android:id="@+id/rl_bar"
@@ -46,7 +46,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/background"
+            android:background="@drawable/bg_gradient_main"
             android:orientation="vertical">
 
             <!-- 配置 -->
@@ -578,7 +578,7 @@
                 android:id="@+id/ll_corp_param"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@color/background"
+                android:background="@drawable/bg_gradient_main"
                 android:orientation="vertical">
 
                 <!-- 企微后台 -->
