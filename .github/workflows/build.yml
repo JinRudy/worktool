@@ -82,13 +82,7 @@ jobs:
           cp app/build/outputs/apk/debug/sulingai-wza-${{ steps.version.outputs.version_name }}.apk \
              pages/latest.apk
           cp index.html pages/index.html
-          cat > pages/version.json << EOF
-          {
-            "version": "${{ steps.version.outputs.version_name }}",
-            "download_url": "https://sulingai-wza.minifog.org.cn/sulingai-wza-${{ steps.version.outputs.version_name }}.apk",
-            "release_notes": "版本 ${{ steps.version.outputs.version_name }} 更新"
-          }
-          EOF
+          printf '{"version":"${{ steps.version.outputs.version_name }}","download_url":"https://sulingai-wza.minifog.org.cn/sulingai-wza-${{ steps.version.outputs.version_name }}.apk","release_notes":"版本 ${{ steps.version.outputs.version_name }} 更新"}\n' > pages/version.json
           echo "Pages files:"
           ls -la pages/
 
@@ -138,13 +132,8 @@ jobs:
             VERSION=$(echo "$LATEST_RELEASE" | jq -r '.tag_name // "unknown"')
             RELEASE_NOTES=$(echo "$LATEST_RELEASE" | jq -r '.body // ""')
             if [ "$VERSION" != "null" ] && [ "$VERSION" != "unknown" ] && [ -n "$VERSION" ]; then
-              cat > pages/version.json << EOF
-              {
-                "version": "${VERSION#v}",
-                "download_url": "https://sulingai-wza.minifog.org.cn/latest.apk",
-                "release_notes": "${RELEASE_NOTES}"
-              }
-              EOF
+              printf '{"version":"%s","download_url":"https://sulingai-wza.minifog.org.cn/latest.apk","release_notes":"%s"}\n' \
+                "${VERSION#v}" "$(echo "$RELEASE_NOTES" | head -1)" > pages/version.json
             fi
           fi
           echo "Pages files:"
