@@ -1,6 +1,7 @@
 package org.yameida.worktool.utils
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -24,6 +25,14 @@ import kotlin.concurrent.thread
 object AutoUpdateChecker {
 
     private const val VERSION_JSON_URL = "https://sulingai-wza.minifog.org.cn/version.json"
+    const val REQUEST_INSTALL_PERMISSION = 10001
+
+    /**
+     * 暂存的待安装 APK 文件。
+     * 当检测到缺少安装权限时会保存该文件，待用户从系统设置返回后继续安装。
+     */
+    var pendingApkFile: File? = null
+        private set
 
     /**
      * 检查更新（静默模式，仅日志输出 + 自动下载）
@@ -85,7 +94,7 @@ object AutoUpdateChecker {
     }
 
     /**
-     * 静默安装（无弹窗，权限不足则记录日志）
+     * 静默安装（无弹窗，权限不足时记录待安装任务）
      */
     private fun installApkSilent(apkFile: File) {
         if (!apkFile.exists()) return
@@ -93,27 +102,57 @@ object AutoUpdateChecker {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val hasPermission = Utils.getApp().packageManager.canRequestPackageInstalls()
             if (!hasPermission) {
-                LogUtils.w("AutoUpdate: 需要安装未知应用权限，跳过自动安装")
+                pendingApkFile = apkFile
+                LogUtils.w("AutoUpdate: 需要安装未知应用权限，待用户进入设置页后自动申请")
                 return
             }
         }
 
+        doInstallApk(apkFile, Utils.getApp())
+        pendingApkFile = null
+    }
+
+    /**
+     * 执行实际安装意图
+     */
+    private fun doInstallApk(apkFile: File, context: Context) {
         try {
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 val apkUri = FileProvider.getUriForFile(
-                    Utils.getApp(),
-                    Utils.getApp().packageName + ".fileprovider",
+                    context,
+                    context.packageName + ".fileprovider",
                     apkFile
                 )
                 setDataAndType(apkUri, "application/vnd.android.package-archive")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            Utils.getApp().startActivity(intent)
-            LogUtils.i("AutoUpdate: 安装意图已发送 (silent)")
+            context.startActivity(intent)
+            LogUtils.i("AutoUpdate: 安装意图已发送")
         } catch (e: Exception) {
-            LogUtils.e("AutoUpdate: 静默安装失败", e)
+            LogUtils.e("AutoUpdate: 安装失败", e)
+            if (context is Activity) {
+                ToastUtils.showLong("安装失败: ${e.message}")
+            }
         }
+    }
+
+    /**
+     * 用户从系统设置返回后调用，尝试继续安装暂存的 APK。
+     */
+    fun resumeInstall(activity: Activity) {
+        val apkFile = pendingApkFile ?: return
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (!activity.packageManager.canRequestPackageInstalls()) {
+                ToastUtils.showLong("未获得安装未知应用权限，更新已取消")
+                pendingApkFile = null
+                return
+            }
+        }
+
+        doInstallApk(apkFile, activity)
+        pendingApkFile = null
     }
 
     /**
@@ -213,7 +252,7 @@ object AutoUpdateChecker {
     }
 
     /**
-     * 安装 APK（带权限引导）
+     * 安装 APK（权限不足时直接跳转系统设置，返回后自动继续安装）
      */
     private fun installApk(apkFile: File, activity: Activity) {
         if (!apkFile.exists()) return
@@ -221,42 +260,18 @@ object AutoUpdateChecker {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val hasPermission = Utils.getApp().packageManager.canRequestPackageInstalls()
             if (!hasPermission) {
-                activity.runOnUiThread {
-                    QMUIDialog.MessageDialogBuilder(activity)
-                        .setTitle("需要安装权限")
-                        .setMessage("请允许安装未知应用以继续更新")
-                        .addAction("取消") { dialog, _ -> dialog.dismiss() }
-                        .addAction("去开启") { dialog, _ ->
-                            dialog.dismiss()
-                            val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                                data = Uri.parse("package:${Utils.getApp().packageName}")
-                            }
-                            activity.startActivity(intent)
-                        }
-                        .create(R.style.QMUI_Dialog)
-                        .show()
+                pendingApkFile = apkFile
+                val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                    data = Uri.parse("package:${Utils.getApp().packageName}")
                 }
+                activity.startActivityForResult(intent, REQUEST_INSTALL_PERMISSION)
+                LogUtils.i("AutoUpdate: 已跳转系统安装权限设置")
                 return
             }
         }
 
-        try {
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                val apkUri = FileProvider.getUriForFile(
-                    Utils.getApp(),
-                    Utils.getApp().packageName + ".fileprovider",
-                    apkFile
-                )
-                setDataAndType(apkUri, "application/vnd.android.package-archive")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            Utils.getApp().startActivity(intent)
-            LogUtils.i("AutoUpdate: 安装意图已发送")
-        } catch (e: Exception) {
-            LogUtils.e("AutoUpdate: 安装失败", e)
-            activity.runOnUiThread { ToastUtils.showLong("安装失败: ${e.message}") }
-        }
+        doInstallApk(apkFile, activity)
+        pendingApkFile = null
     }
 
     /**

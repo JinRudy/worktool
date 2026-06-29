@@ -54,6 +54,15 @@ class SettingsActivity : AppCompatActivity() {
         super.onResume()
         freshOpenFlow()
         freshOpenMain()
+        // 从安装权限设置页返回后，若已授权则继续安装暂存的 APK
+        AutoUpdateChecker.resumeInstall(this)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == AutoUpdateChecker.REQUEST_INSTALL_PERMISSION) {
+            AutoUpdateChecker.resumeInstall(this)
+        }
     }
 
     private fun initView() {
