@@ -110,6 +110,7 @@ object WeworkDebug {
     ) {
         try {
             val json = JSONObject()
+            json.put("robot_id", Constant.robotId)
             json.put("is_at_home", isAtHome)
             json.put("package_name", packageName)
             json.put("current_class", className)
