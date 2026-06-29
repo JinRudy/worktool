@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import com.blankj.utilcode.util.*
 import com.qmuiteam.qmui.widget.dialog.QMUIDialog
 import org.json.JSONObject
@@ -17,15 +18,15 @@ import kotlin.concurrent.thread
 
 /**
  * 自动更新检查器
- * 从 jsdelivr CDN 读取 version.json 获取最新版本信息
- * APK 通过 GitHub Pages 下载（国内访问速度优于 Release 直链）
+ * 从 version.json 获取最新版本信息
  */
 object AutoUpdateChecker {
 
     private const val VERSION_JSON_URL = "https://sulingai-wza.minifog.org.cn/version.json"
 
     /**
-     * 检查更新（静默模式，仅日志输出）
+     * 检查更新（静默模式，仅日志输出 + 自动下载）
+     * 在应用启动或后台时调用
      */
     fun checkUpdateSilent() {
         thread {
@@ -41,13 +42,73 @@ object AutoUpdateChecker {
 
                 if (latestVersionCode > currentVersionCode) {
                     LogUtils.i("AutoUpdate: 发现新版本 ${update.optString("version")} (当前: $currentVersionCode)")
-                    downloadAndInstall(update)
+                    downloadAndInstallSilent(update)
                 } else {
                     LogUtils.d("AutoUpdate: 已是最新版本 ${update.optString("version")}")
                 }
             } catch (e: Exception) {
                 LogUtils.e("AutoUpdate: 检查更新异常", e)
             }
+        }
+    }
+
+    /**
+     * 静默下载安装（无弹窗）
+     * 下载成功后尝试安装，权限不足则记录日志
+     */
+    private fun downloadAndInstallSilent(update: JSONObject) {
+        val downloadUrl = update.optString("download_url")
+        if (downloadUrl.isBlank()) {
+            LogUtils.e("AutoUpdate: 下载链接为空")
+            return
+        }
+
+        val version = update.optString("version", "latest")
+        val apkFile = File(Utils.getApp().cacheDir, "update_${version}.apk")
+
+        thread {
+            try {
+                LogUtils.i("AutoUpdate: 开始下载 $version")
+                val success = HttpHelper.downloadFile(downloadUrl, apkFile)
+
+                if (success && apkFile.exists() && apkFile.length() > 1000000) {
+                    LogUtils.i("AutoUpdate: 下载完成 ${apkFile.length()} bytes")
+                    installApkSilent(apkFile)
+                } else {
+                    LogUtils.e("AutoUpdate: 下载失败或文件不完整 (size=${apkFile.length()})")
+                }
+            } catch (e: Exception) {
+                LogUtils.e("AutoUpdate: 下载异常", e)
+            }
+        }
+    }
+
+    /**
+     * 静默安装（无弹窗，权限不足则记录日志）
+     */
+    private fun installApkSilent(apkFile: File) {
+        if (!apkFile.exists()) return
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val hasPermission = Utils.getApp().packageManager.canRequestPackageInstalls()
+            if (!hasPermission) {
+                LogUtils.w("AutoUpdate: 需要安装未知应用权限，跳过自动安装")
+                return
+            }
+        }
+
+        try {
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                setDataAndType(
+                    Uri.fromFile(apkFile),
+                    "application/vnd.android.package-archive"
+                )
+            }
+            Utils.getApp().startActivity(intent)
+            LogUtils.i("AutoUpdate: 安装意图已发送")
+        } catch (e: Exception) {
+            LogUtils.e("AutoUpdate: 安装失败", e)
         }
     }
 
@@ -88,11 +149,11 @@ object AutoUpdateChecker {
     }
 
     /**
-     * 从 jsdelivr CDN 获取版本信息
+     * 从 version.json 获取版本信息
      */
     private fun fetchVersionInfo(): JSONObject? {
         try {
-            LogUtils.i("AutoUpdate: 从 jsdelivr 获取版本信息")
+            LogUtils.i("AutoUpdate: 从 $VERSION_JSON_URL 获取版本信息")
             val conn = (URL(VERSION_JSON_URL).openConnection() as HttpURLConnection).apply {
                 connectTimeout = 10000
                 readTimeout = 10000
@@ -115,12 +176,12 @@ object AutoUpdateChecker {
     }
 
     /**
-     * 下载 APK 并安装
+     * 下载 APK 并安装（带 UI 反馈）
      */
-    private fun downloadAndInstall(update: JSONObject) {
+    private fun downloadAndInstall(update: JSONObject, activity: Activity) {
         val downloadUrl = update.optString("download_url")
         if (downloadUrl.isBlank()) {
-            LogUtils.e("AutoUpdate: 下载链接为空")
+            activity.runOnUiThread { ToastUtils.showLong("下载链接为空") }
             return
         }
 
@@ -128,50 +189,66 @@ object AutoUpdateChecker {
         val apkFile = File(Utils.getApp().cacheDir, "update_${version}.apk")
 
         thread {
+            activity.runOnUiThread { ToastUtils.showLong("开始下载 $version...") }
             try {
-                LogUtils.i("AutoUpdate: 开始下载 $version")
                 val success = HttpHelper.downloadFile(downloadUrl, apkFile)
 
                 if (success && apkFile.exists() && apkFile.length() > 1000000) {
                     LogUtils.i("AutoUpdate: 下载完成 ${apkFile.length()} bytes")
-                    installApk(apkFile)
+                    activity.runOnUiThread { ToastUtils.showLong("下载完成，正在安装...") }
+                    installApk(apkFile, activity)
                 } else {
                     LogUtils.e("AutoUpdate: 下载失败或文件不完整")
+                    activity.runOnUiThread { ToastUtils.showLong("下载失败，请检查网络后重试") }
                 }
             } catch (e: Exception) {
                 LogUtils.e("AutoUpdate: 下载异常", e)
+                activity.runOnUiThread { ToastUtils.showLong("下载异常: ${e.message}") }
             }
         }
     }
 
     /**
-     * 安装 APK
+     * 安装 APK（带权限引导）
      */
-    private fun installApk(apkFile: File) {
+    private fun installApk(apkFile: File, activity: Activity) {
         if (!apkFile.exists()) return
 
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            setDataAndType(
-                Uri.fromFile(apkFile),
-                "application/vnd.android.package-archive"
-            )
-        }
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val hasPermission = Utils.getApp().packageManager
-                .canRequestPackageInstalls()
+            val hasPermission = Utils.getApp().packageManager.canRequestPackageInstalls()
             if (!hasPermission) {
-                LogUtils.w("AutoUpdate: 需要安装未知应用权限")
+                activity.runOnUiThread {
+                    QMUIDialog.MessageDialogBuilder(activity)
+                        .setTitle("需要安装权限")
+                        .setMessage("请允许安装未知应用以继续更新")
+                        .addAction("取消") { dialog, _ -> dialog.dismiss() }
+                        .addAction("去开启") { dialog, _ ->
+                            dialog.dismiss()
+                            val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                                data = Uri.parse("package:${Utils.getApp().packageName}")
+                            }
+                            activity.startActivity(intent)
+                        }
+                        .create(R.style.QMUI_Dialog)
+                        .show()
+                }
                 return
             }
         }
 
         try {
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                setDataAndType(
+                    Uri.fromFile(apkFile),
+                    "application/vnd.android.package-archive"
+                )
+            }
             Utils.getApp().startActivity(intent)
             LogUtils.i("AutoUpdate: 安装意图已发送")
         } catch (e: Exception) {
             LogUtils.e("AutoUpdate: 安装失败", e)
+            activity.runOnUiThread { ToastUtils.showLong("安装失败: ${e.message}") }
         }
     }
 
@@ -186,14 +263,14 @@ object AutoUpdateChecker {
     ) {
         QMUIDialog.MessageDialogBuilder(activity)
             .setTitle("发现新版本 $version")
-            .setMessage(releaseNotes)
+            .setMessage(releaseNotes.ifBlank { "立即更新到最新版本" })
             .addAction("立即下载") { dialog, _ ->
                 dialog.dismiss()
                 downloadAndInstall(JSONObject().apply {
                     put("version", version)
                     put("download_url", downloadUrl)
                     put("version_code", parseVersionCode(version))
-                })
+                }, activity)
             }
             .addAction("取消") { dialog, _ -> dialog.dismiss() }
             .create(R.style.QMUI_Dialog)

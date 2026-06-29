@@ -45,6 +45,9 @@ class SettingsActivity : AppCompatActivity() {
 
         initView()
         initData()
+
+        // 进入设置页时自动检测更新（静默模式）
+        AutoUpdateChecker.checkUpdateSilent()
     }
 
     override fun onResume() {

@@ -17,6 +17,7 @@ import org.yameida.worktool.config.GlobalException
 import org.yameida.worktool.notification.PlayNotifyManager
 import org.yameida.worktool.utils.IWWAPIUtil
 import org.yameida.worktool.utils.LogUtilsInit
+import org.yameida.worktool.utils.AutoUpdateChecker
 // import update.UpdateAppUtils
 
 class MyApplication : Application() {
@@ -63,6 +64,8 @@ class MyApplication : Application() {
         IWWAPIUtil.init(this)
         //初始化自动更新
 //        UpdateAppUtils.init(this)
+        //启动时自动检测更新（静默模式）
+        AutoUpdateChecker.checkUpdateSilent()
         //初始化前台服务
         PlayNotifyManager.show()
         //设置全局异常捕获重启
