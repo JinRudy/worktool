@@ -77,22 +77,40 @@ object BotWebSocketClient {
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                 connected = false
                 heartbeatThread = null
-                LogUtils.i("BotWebSocket 连接关闭: $code $reason")
                 flushThread = null
-                // 3秒后重连
+                // 关闭旧 socket，避免资源泄漏
+                try {
+                    socket?.close(1000, "closed by server")
+                } catch (_: Exception) {}
+                socket = null
+                LogUtils.i("BotWebSocket 连接关闭: $code $reason")
+                // 5秒后重连
                 thread {
-                    Thread.sleep(3000)
+                    Thread.sleep(5000)
                     if (!connected) connect()
                 }
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 connected = false
-                LogUtils.e("BotWebSocket 连接失败", t)
+                heartbeatThread = null
                 flushThread = null
-                // 3秒后重连
+                // 关闭旧 socket，避免资源泄漏
+                try {
+                    socket?.close(1000, "failure")
+                } catch (_: Exception) {}
+                socket = null
+                val msg = t.message ?: ""
+                // Code 1012 = Service Restart, EOF = 服务端提前关闭
+                val isReservedOrEof = msg.contains("reserved") || t is java.io.EOFException
+                if (isReservedOrEof) {
+                    LogUtils.w("BotWebSocket 服务端关闭连接 (${if (msg.contains("reserved")) "close 1012" else "EOF"})，5秒后重连")
+                } else {
+                    LogUtils.e("BotWebSocket 连接失败", t)
+                }
+                // 5秒后重连
                 thread {
-                    Thread.sleep(3000)
+                    Thread.sleep(5000)
                     if (!connected) connect()
                 }
             }

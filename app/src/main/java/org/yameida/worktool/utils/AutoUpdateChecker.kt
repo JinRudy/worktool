@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.core.content.FileProvider
 import com.blankj.utilcode.util.*
 import com.qmuiteam.qmui.widget.dialog.QMUIDialog
 import org.json.JSONObject
@@ -100,15 +101,18 @@ object AutoUpdateChecker {
         try {
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                setDataAndType(
-                    Uri.fromFile(apkFile),
-                    "application/vnd.android.package-archive"
+                val apkUri = FileProvider.getUriForFile(
+                    Utils.getApp(),
+                    Utils.getApp().packageName + ".fileprovider",
+                    apkFile
                 )
+                setDataAndType(apkUri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             Utils.getApp().startActivity(intent)
-            LogUtils.i("AutoUpdate: 安装意图已发送")
+            LogUtils.i("AutoUpdate: 安装意图已发送 (silent)")
         } catch (e: Exception) {
-            LogUtils.e("AutoUpdate: 安装失败", e)
+            LogUtils.e("AutoUpdate: 静默安装失败", e)
         }
     }
 
@@ -239,10 +243,13 @@ object AutoUpdateChecker {
         try {
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                setDataAndType(
-                    Uri.fromFile(apkFile),
-                    "application/vnd.android.package-archive"
+                val apkUri = FileProvider.getUriForFile(
+                    Utils.getApp(),
+                    Utils.getApp().packageName + ".fileprovider",
+                    apkFile
                 )
+                setDataAndType(apkUri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             Utils.getApp().startActivity(intent)
             LogUtils.i("AutoUpdate: 安装意图已发送")
