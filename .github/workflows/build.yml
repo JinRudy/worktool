@@ -1,7 +1,8 @@
-name: Build WorkTool APK
+name: Build WorkTool APK & Deploy Pages
 
 on:
   push:
+    branches: ["master"]
     tags:
       - 'v*'
   workflow_dispatch:
@@ -12,7 +13,9 @@ permissions:
   id-token: write
 
 jobs:
+  # 构建 APK（仅 tag push 或手动触发时执行）
   build:
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,8 +23,8 @@ jobs:
       - name: Set up JDK 11
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '11'
+          distribution: temurin
+          java-version: 11
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
@@ -80,10 +83,9 @@ jobs:
           mkdir -p pages
           cp app/build/outputs/apk/debug/sulingai-wza-${{ steps.version.outputs.version_name }}.apk \
              pages/sulingai-wza-${{ steps.version.outputs.version_name }}.apk
-          # 同时保留 latest.apk 别名
           cp app/build/outputs/apk/debug/sulingai-wza-${{ steps.version.outputs.version_name }}.apk \
              pages/latest.apk
-          # 生成 version.json 用于 jsdelivr 加速读取
+          cp index.html pages/index.html
           cat > pages/version.json << EOF
           {
             "version": "${{ steps.version.outputs.version_name }}",
@@ -100,8 +102,29 @@ jobs:
         with:
           path: pages/
 
-  deploy-pages:
-    needs: build
+  # 仅部署发布页（push to master 时执行，不需要构建 APK）
+  deploy-pages-only:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare Pages
+        run: |
+          mkdir -p pages
+          cp index.html pages/index.html
+          echo "Pages files:"
+          ls -la pages/
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages/
+
+  # 部署 GitHub Pages（两个 job 完成后执行）
+  deploy:
+    needs: [build, deploy-pages-only]
+    if: always() && (needs.build.result == 'success' || needs.deploy-pages-only.result == 'success')
     runs-on: ubuntu-latest
     permissions:
       pages: write
