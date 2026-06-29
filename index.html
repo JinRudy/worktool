@@ -5,44 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>素灵智能 WorkTool - 微信自动化客户端</title>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         :root {
-            --primary: #07c160;
-            --primary-dark: #06a854;
-            --primary-soft: #e6f9ef;
-            --bg: #ffffff;
-            --bg-card: #f8fafb;
-            --bg-card-hover: #ffffff;
-            --text: #1a1a2e;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-soft: #eef2ff;
+            --accent: #8b5cf6;
+            --bg-card: #ffffff;
+            --text: #1e1b4b;
             --text-secondary: #6b7280;
             --border: #e5e7eb;
-            --accent-blue: #3b82f6;
-            --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-            --shadow-hover: 0 4px 12px rgba(0,0,0,0.1);
+            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-hover: 0 4px 16px rgba(99,102,241,0.15);
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-            background: var(--bg);
+            background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 30%, #eef2ff 60%, #faf5ff 100%);
             color: var(--text);
             min-height: 100vh;
             line-height: 1.6;
         }
-        .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+
+        .container {
+            max-width: 840px;
+            margin: 0 auto;
+            padding: 50px 24px;
+        }
 
         /* Hero Section */
         .hero {
             text-align: center;
-            padding: 60px 20px 40px;
+            padding: 40px 20px;
         }
+
         .hero h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--primary), var(--accent-blue));
+            font-size: 2.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             margin-bottom: 16px;
+            letter-spacing: -0.5px;
         }
+
         .hero p {
             color: var(--text-secondary);
             font-size: 1.1rem;
@@ -53,138 +61,179 @@
         /* Features */
         .features {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 16px;
-            margin: 40px 0;
+            margin: 36px 0;
         }
+
         .feature {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
+            border-radius: 14px;
+            padding: 22px 20px;
             text-align: center;
-            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
             box-shadow: var(--shadow);
         }
+
         .feature:hover {
-            transform: translateY(-2px);
-            border-color: var(--primary);
+            transform: translateY(-3px);
             box-shadow: var(--shadow-hover);
         }
+
         .feature .icon {
             font-size: 2rem;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
+            display: block;
         }
+
         .feature h3 {
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+            color: var(--text);
         }
+
         .feature p {
             color: var(--text-secondary);
-            font-size: 0.85rem;
+            font-size: 0.82rem;
         }
 
         /* Downloads Section */
         .downloads {
-            margin-top: 50px;
+            margin-top: 40px;
         }
+
         .downloads h2 {
-            font-size: 1.5rem;
-            margin-bottom: 24px;
+            font-size: 1.6rem;
+            margin-bottom: 20px;
             text-align: center;
+            color: var(--text);
+            font-weight: 700;
         }
+
         .downloads h2 span {
-            color: var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .release-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            margin-bottom: 16px;
+            border-radius: 14px;
+            margin-bottom: 14px;
             overflow: hidden;
             transition: border-color 0.2s, box-shadow 0.2s;
             box-shadow: var(--shadow);
         }
+
         .release-card:hover {
             border-color: var(--primary);
             box-shadow: var(--shadow-hover);
         }
+
         .release-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px 20px;
+            padding: 14px 20px;
             border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, var(--primary-soft) 0%, #faf5ff 100%);
         }
+
         .release-tag {
             background: var(--primary);
-            color: #000;
-            padding: 4px 12px;
+            color: #fff;
+            padding: 4px 14px;
             border-radius: 20px;
             font-size: 0.85rem;
             font-weight: 600;
         }
+
         .release-date {
             color: var(--text-secondary);
-            font-size: 0.85rem;
+            font-size: 0.82rem;
         }
+
         .release-body {
-            padding: 16px 20px;
+            padding: 14px 20px;
         }
+
         .release-body p {
             color: var(--text-secondary);
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             margin-bottom: 12px;
             white-space: pre-line;
         }
+
         .download-btn {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: var(--primary);
-            color: #000;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: #fff;
             text-decoration: none;
-            padding: 10px 20px;
-            border-radius: 8px;
+            padding: 10px 22px;
+            border-radius: 10px;
             font-weight: 600;
             font-size: 0.9rem;
-            transition: background 0.2s;
+            transition: opacity 0.2s, transform 0.2s;
+            border: none;
         }
+
         .download-btn:hover {
-            background: var(--primary-dark);
+            opacity: 0.9;
+            transform: translateY(-1px);
         }
 
         .loading {
             text-align: center;
             padding: 40px;
             color: var(--text-secondary);
+            font-size: 0.95rem;
         }
+
         .error {
             text-align: center;
             padding: 40px;
             color: #ef4444;
         }
 
+        .error a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .error a:hover {
+            text-decoration: underline;
+        }
+
         /* Footer */
         .footer {
             text-align: center;
-            margin-top: 60px;
-            padding-top: 30px;
-            border-top: 1px solid var(--border);
+            margin-top: 50px;
+            padding-top: 24px;
             color: var(--text-secondary);
             font-size: 0.85rem;
         }
-        .footer a {
-            color: var(--primary);
-            text-decoration: none;
+
+        .footer .brand {
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-        .footer a:hover { text-decoration: underline; }
 
         @media (max-width: 600px) {
-            .hero h1 { font-size: 1.8rem; }
+            .hero h1 { font-size: 2rem; }
             .hero p { font-size: 0.95rem; }
+            .features { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .feature { padding: 18px 14px; }
+            .container { padding: 30px 16px; }
         }
     </style>
 </head>
@@ -197,22 +246,22 @@
 
         <div class="features">
             <div class="feature">
-                <div class="icon">🤖</div>
+                <span class="icon">🤖</span>
                 <h3>无人值守</h3>
                 <p>24小时自动运行，无需人工干预</p>
             </div>
             <div class="feature">
-                <div class="icon">📱</div>
+                <span class="icon">📱</span>
                 <h3>兼容性强</h3>
                 <p>兼容 99% 安卓机型，无需 Root</p>
             </div>
             <div class="feature">
-                <div class="icon">🔒</div>
+                <span class="icon">🔒</span>
                 <h3>安全合规</h3>
                 <p>基于官方无障碍服务，无 Hook 无侵入</p>
             </div>
             <div class="feature">
-                <div class="icon">⚡</div>
+                <span class="icon">⚡</span>
                 <h3>API 驱动</h3>
                 <p>提供完整 API 接口，灵活集成</p>
             </div>
@@ -226,11 +275,7 @@
         </div>
 
         <div class="footer">
-            <p>
-                <a href="https://github.com/JinRudy/worktool" target="_blank">📦 GitHub</a> ·
-                <a href="https://worktool.apifox.cn/doc-850007" target="_blank">📝 API 文档</a> ·
-                <a href="https://www.ymdyes.cn/contact" target="_blank">💬 合作申请</a>
-            </p>
+            <p><span class="brand">素灵智能</span> · WorkTool 微信自动化客户端</p>
         </div>
     </div>
 
@@ -274,7 +319,7 @@
                 container.innerHTML = html;
             } catch (err) {
                 container.innerHTML = `<div class="error">加载失败：${err.message}<br><br>
-                    备用下载：<a href="${domain}/latest.apk">最新 APK</a> 或 <a href="https://github.com/JinRudy/worktool/releases" target="_blank">GitHub Releases</a></div>`;
+                    备用下载：<a href="${domain}/latest.apk">最新 APK</a></div>`;
             }
         }
         loadReleases();
