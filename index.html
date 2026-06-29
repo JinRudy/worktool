@@ -8,13 +8,16 @@
         :root {
             --primary: #07c160;
             --primary-dark: #06a854;
-            --bg: #0b1420;
-            --bg-card: #152238;
-            --bg-card-hover: #1a2d4a;
-            --text: #e8edf5;
-            --text-secondary: #8899aa;
-            --border: #1e3a5f;
+            --primary-soft: #e6f9ef;
+            --bg: #ffffff;
+            --bg-card: #f8fafb;
+            --bg-card-hover: #ffffff;
+            --text: #1a1a2e;
+            --text-secondary: #6b7280;
+            --border: #e5e7eb;
             --accent-blue: #3b82f6;
+            --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-hover: 0 4px 12px rgba(0,0,0,0.1);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -60,11 +63,13 @@
             border-radius: 12px;
             padding: 24px;
             text-align: center;
-            transition: transform 0.2s, border-color 0.2s;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+            box-shadow: var(--shadow);
         }
         .feature:hover {
             transform: translateY(-2px);
             border-color: var(--primary);
+            box-shadow: var(--shadow-hover);
         }
         .feature .icon {
             font-size: 2rem;
@@ -99,10 +104,12 @@
             border-radius: 12px;
             margin-bottom: 16px;
             overflow: hidden;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-shadow: var(--shadow);
         }
         .release-card:hover {
             border-color: var(--primary);
+            box-shadow: var(--shadow-hover);
         }
         .release-header {
             display: flex;
@@ -157,7 +164,7 @@
         .error {
             text-align: center;
             padding: 40px;
-            color: #ff6b6b;
+            color: #ef4444;
         }
 
         /* Footer */
@@ -230,6 +237,7 @@
     <script>
         async function loadReleases() {
             const container = document.getElementById('releases');
+            const domain = window.location.origin;
             try {
                 const response = await fetch('https://api.github.com/repos/JinRudy/worktool/releases');
                 if (!response.ok) throw new Error('Failed to fetch');
@@ -242,14 +250,13 @@
 
                 let html = '';
                 for (const release of releases) {
-                    const assets = release.assets || [];
-                    const apkAsset = assets.find(a => a.name.endsWith('.apk')) || assets[0];
-                    const downloadUrl = apkAsset ? apkAsset.browser_download_url : null;
                     const dateStr = new Date(release.published_at).toLocaleDateString('zh-CN', {
                         year: 'numeric', month: '2-digit', day: '2-digit',
                         hour: '2-digit', minute: '2-digit'
                     });
                     const bodyLines = release.body ? release.body.split('\n').filter(line => !line.startsWith('**GitHub Release') && !line.startsWith('**GitHub Pages') && !line.match(/!\[QR\]/) && !line.match(/^https?:/)).slice(0, 5).join('\n') : '';
+                    const apkName = 'sulingai-wza-' + release.tag_name.replace(/^v/, '') + '.apk';
+                    const apkUrl = domain + '/' + apkName;
 
                     html += `
                         <div class="release-card">
@@ -259,7 +266,7 @@
                             </div>
                             <div class="release-body">
                                 ${bodyLines ? `<p>${bodyLines}</p>` : ''}
-                                ${downloadUrl ? `<a href="${downloadUrl}" target="_blank" class="download-btn">📥 下载 APK</a>` : ''}
+                                <a href="${apkUrl}" class="download-btn">📥 下载 APK</a>
                             </div>
                         </div>
                     `;
@@ -267,7 +274,7 @@
                 container.innerHTML = html;
             } catch (err) {
                 container.innerHTML = `<div class="error">加载失败：${err.message}<br><br>
-                    备用下载：<a href="https://github.com/JinRudy/worktool/releases" target="_blank">GitHub Releases</a></div>`;
+                    备用下载：<a href="${domain}/latest.apk">最新 APK</a> 或 <a href="https://github.com/JinRudy/worktool/releases" target="_blank">GitHub Releases</a></div>`;
             }
         }
         loadReleases();
