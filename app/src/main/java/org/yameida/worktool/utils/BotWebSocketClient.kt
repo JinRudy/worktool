@@ -7,6 +7,8 @@ import org.json.JSONObject
 import org.yameida.worktool.Constant
 import org.yameida.worktool.model.WeworkMessageBean
 import org.yameida.worktool.service.WeworkController
+import java.net.InetAddress
+import java.net.NetworkInterface
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
@@ -58,6 +60,8 @@ object BotWebSocketClient {
                 connected = true
                 LogUtils.i("BotWebSocket 连接成功")
                 startFlushThread()
+                // WebSocket 连上后立即注册客户端信息
+                thread(start = true) { register() }
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
@@ -104,6 +108,42 @@ object BotWebSocketClient {
             LogUtils.e("BotWebSocket 关闭失败", e)
         }
         socket = null
+    }
+
+    /**
+     * 注册客户端 - WebSocket 连上后立即调用
+     */
+    private fun register() {
+        if (Constant.localCallbackUrl.isBlank()) {
+            LogUtils.w("BotWebSocket: 回调地址为空，跳过注册")
+            return
+        }
+        try {
+            val baseUrl = Constant.localCallbackUrl
+            val registerUrl = "$baseUrl/api/client/register"
+            LogUtils.i("BotWebSocket 注册客户端: $registerUrl")
+
+            val json = JSONObject()
+            json.put("robot_id", Constant.robotId)
+            json.put("client_ip", getLanIp())
+            json.put("client_port", Constant.localHttpPort)
+            json.put("device_name", "")
+            json.put("network_mode", "private")
+            json.put("callback_url", Constant.localCallbackUrl)
+            val request = okhttp3.Request.Builder()
+                .url(registerUrl)
+                .post(okhttp3.RequestBody.create(
+                    okhttp3.MediaType.parse("application/json; charset=utf-8"),
+                    json.toString()
+                ))
+                .build()
+
+            val response = client.newCall(request).execute()
+            val body = response.body()?.string() ?: ""
+            LogUtils.i("BotWebSocket 注册响应: ${response.code()} $body")
+        } catch (e: Exception) {
+            LogUtils.e("BotWebSocket 注册失败", e)
+        }
     }
 
     /**
@@ -256,5 +296,29 @@ object BotWebSocketClient {
             LogUtils.e("BotWebSocket 解析消息失败: $text", e)
             error("BotWebSocket", "解析消息失败: $text", e)
         }
+    }
+
+    /**
+     * 获取设备局域网 IP（自动检测）
+     */
+    private fun getLanIp(): String {
+        try {
+            val interfaces = NetworkInterface.getNetworkInterfaces()
+            while (interfaces.hasMoreElements()) {
+                val iface = interfaces.nextElement()
+                if (iface.isUp && !iface.isLoopback && iface.supportsMulticast()) {
+                    val addrs = iface.inetAddresses
+                    while (addrs.hasMoreElements()) {
+                        val addr = addrs.nextElement()
+                        if (addr is InetAddress && !addr.isLoopbackAddress && !addr.hostAddress?.contains(":") == true) {
+                            return addr.hostAddress ?: ""
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            LogUtils.e("getLanIp error", e)
+        }
+        return "unknown"
     }
 }
