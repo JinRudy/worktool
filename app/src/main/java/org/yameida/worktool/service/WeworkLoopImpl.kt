@@ -37,7 +37,7 @@ object WeworkLoopImpl {
         try {
             // 主循环启动时自动上报一次调试信息
             if (Constant.useLocalMode && Constant.localCallbackUrl.isNotBlank()) {
-                thread(start = true) { WeworkDebug.dumpPage(WeworkMessageBean()) }
+                Thread { WeworkDebug.dumpPage(WeworkMessageBean()) }.start()
             }
             while (mainLoopRunning) {
                 if (!isAtHome()) {
@@ -52,7 +52,7 @@ object WeworkLoopImpl {
 
                 // 每 100 次循环（约 30 秒）自动上报一次调试信息
                 if (logIndex % 100 == 0 && Constant.useLocalMode && Constant.localCallbackUrl.isNotBlank()) {
-                    thread(start = true) { WeworkDebug.dumpPage(WeworkMessageBean()) }
+                    Thread { WeworkDebug.dumpPage(WeworkMessageBean()) }.start()
                 }
 
                 if (getChatroomList()) {

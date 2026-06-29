@@ -310,7 +310,7 @@ object BotWebSocketClient {
                     val addrs = iface.inetAddresses
                     while (addrs.hasMoreElements()) {
                         val addr = addrs.nextElement()
-                        if (addr is InetAddress && !addr.isLoopbackAddress && !addr.hostAddress?.contains(":") == true) {
+                        if (addr is InetAddress && !addr.isLoopbackAddress && (addr.hostAddress == null || !addr.hostAddress.contains(":"))) {
                             return addr.hostAddress ?: ""
                         }
                     }
