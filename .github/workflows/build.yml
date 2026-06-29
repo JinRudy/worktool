@@ -13,9 +13,9 @@ permissions:
   id-token: write
 
 jobs:
-  # 构建 APK（仅 tag push 或手动触发时执行）
+  # 构建 APK（仅 tag push 时执行）
   build:
-    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -99,9 +99,9 @@ jobs:
           path: pages/
           name: github-pages-tag
 
-  # 仅部署发布页（push to master 时执行，从 GitHub Release 拉取最新 APK）
+  # 仅部署发布页（push to master 或手动触发时执行，从 GitHub Release 拉取最新 APK）
   deploy-pages-only:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
