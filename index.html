@@ -294,28 +294,47 @@
                 }
 
                 let html = '';
-                for (const release of releases) {
-                    const dateStr = new Date(release.published_at).toLocaleDateString('zh-CN', {
-                        year: 'numeric', month: '2-digit', day: '2-digit',
-                        hour: '2-digit', minute: '2-digit'
-                    });
-                    const bodyLines = release.body ? release.body.split('\n').filter(line => !line.startsWith('**GitHub Release') && !line.startsWith('**GitHub Pages') && !line.match(/!\[QR\]/) && !line.match(/^https?:/)).slice(0, 5).join('\n') : '';
-                    const apkName = 'sulingai-wza-' + release.tag_name.replace(/^v/, '') + '.apk';
-                    const apkUrl = domain + '/' + apkName;
+                const latest = releases[0];
+                const latestDate = new Date(latest.published_at).toLocaleDateString('zh-CN', {
+                    year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit'
+                });
+                const latestBody = latest.body ? latest.body.split('\n').filter(line => !line.startsWith('**GitHub Release') && !line.startsWith('**GitHub Pages') && !line.match(/!\[QR\]/) && !line.match(/^https?:/)).slice(0, 5).join('\n') : '';
+                const latestVersion = latest.tag_name.replace(/^v/, '');
 
-                    html += `
-                        <div class="release-card">
-                            <div class="release-header">
-                                <span class="release-tag">${release.tag_name}</span>
-                                <span class="release-date">${dateStr}</span>
-                            </div>
-                            <div class="release-body">
-                                ${bodyLines ? `<p>${bodyLines}</p>` : ''}
-                                <a href="${apkUrl}" class="download-btn">📥 下载 APK</a>
-                            </div>
+                html += `
+                    <div class="release-card">
+                        <div class="release-header">
+                            <span class="release-tag">${latest.tag_name}</span>
+                            <span class="release-date">${latestDate}</span>
                         </div>
-                    `;
+                        <div class="release-body">
+                            ${latestBody ? `<p>${latestBody}</p>` : ''}
+                            <a href="${domain}/sulingai-wza-${latestVersion}.apk" class="download-btn">📥 下载最新版 APK</a>
+                            <a href="${latest.html_url}" target="_blank" class="download-btn" style="margin-left: 10px; background: linear-gradient(135deg, #6b7280, #4b5563);">🔗 GitHub Release</a>
+                        </div>
+                    </div>
+                `;
+
+                if (releases.length > 1) {
+                    html += '<div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);"><h3 style="font-size: 1rem; color: var(--text-secondary); margin-bottom: 12px;">历史版本</h3>';
+                    for (let i = 1; i < releases.length; i++) {
+                        const release = releases[i];
+                        const dateStr = new Date(release.published_at).toLocaleDateString('zh-CN', {
+                            year: 'numeric', month: '2-digit', day: '2-digit',
+                            hour: '2-digit', minute: '2-digit'
+                        });
+                        html += `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border);">
+                                <span style="font-weight: 600; color: var(--text);">${release.tag_name}</span>
+                                <span style="color: var(--text-secondary); font-size: 0.85rem;">${dateStr}</span>
+                                <a href="${release.html_url}" target="_blank" style="color: var(--primary); text-decoration: none; font-size: 0.85rem; font-weight: 500;">GitHub 下载</a>
+                            </div>
+                        `;
+                    }
+                    html += '</div>';
                 }
+
                 container.innerHTML = html;
             } catch (err) {
                 container.innerHTML = `<div class="error">加载失败：${err.message}<br><br>
