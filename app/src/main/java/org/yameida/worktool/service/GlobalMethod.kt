@@ -46,25 +46,26 @@ fun goHome() {
  */
 fun goHomeTab(title: String): Boolean {
     var find = false
-    while (!find) {
+    var loopCount = 0
+    val maxLoop = 15
+    while (!find && loopCount < maxLoop) {
+        loopCount++
         val list = AccessibilityUtil.findAllOnceByText(getRoot(), title, exact = true)
         for (item in list) {
-            val childCount = item.parent?.parent?.parent?.childCount
-            if (childCount == 4 || childCount == 5) {
-                //处理侧边栏抽屉打开
-                if (title == "消息") {
-                    val rect = Rect()
-                    item.getBoundsInScreen(rect)
-                    if (rect.left > ScreenUtils.getScreenWidth() / 2) {
-                        return goHomeTab("工作台") && goHomeTab("消息")
-                    }
+            if (!isBottomTab(item)) continue
+            //处理侧边栏抽屉打开
+            if (title == "消息") {
+                val rect = Rect()
+                item.getBoundsInScreen(rect)
+                if (rect.left > ScreenUtils.getScreenWidth() / 2) {
+                    return goHomeTab("工作台") && goHomeTab("消息")
                 }
-                if (!item.isSelected) {
-                    AccessibilityUtil.performClick(item)
-                    sleep(300)
-                }
-                find = true
             }
+            if (!item.isSelected) {
+                AccessibilityUtil.performClick(item)
+                sleep(300)
+            }
+            find = true
         }
         if (!find) {
             if (isAtHome()) {
@@ -83,6 +84,9 @@ fun goHomeTab(title: String): Boolean {
             }
         }
     }
+    if (!find) {
+        LogUtils.w("进入首页-${title}页失败，超过最大重试次数")
+    }
     LogUtils.v("进入首页-${title}页")
     return find
 }
@@ -92,15 +96,26 @@ fun goHomeTab(title: String): Boolean {
  */
 fun isAtHome(): Boolean {
     val list = AccessibilityUtil.findAllOnceByText(getRoot(), "消息", exact = true)
-    val item = list.firstOrNull {
-        val childCount = it.parent?.parent?.parent?.childCount
-        (childCount == 4 || childCount == 5)
-    } ?: return false
+    val item = list.firstOrNull { isBottomTab(it) } ?: return false
     if (!item.isSelected) {
         AccessibilityUtil.performClick(item)
         sleep(300)
     }
     return true
+}
+
+/**
+ * 判断节点是否为企业微信底部导航 tab
+ * 5.0.9 等新版底部 tab 结构可能变化，通过屏幕位置辅助过滤
+ */
+private fun isBottomTab(item: AccessibilityNodeInfo): Boolean {
+    val rect = Rect()
+    item.getBoundsInScreen(rect)
+    val screenHeight = ScreenUtils.getScreenHeight()
+    // tab 应该位于屏幕底部 15% 区域内
+    if (rect.top < screenHeight * 0.75) return false
+    val childCount = item.parent?.parent?.parent?.childCount
+    return childCount == 4 || childCount == 5
 }
 
 /**

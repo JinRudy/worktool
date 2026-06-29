@@ -168,6 +168,36 @@
             white-space: pre-line;
         }
 
+        .download-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .qr-code {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+
+        .qr-code img {
+            width: 120px;
+            height: 120px;
+            display: block;
+        }
+
+        .qr-code span {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
         .download-btn {
             display: inline-flex;
             align-items: center;
@@ -310,8 +340,14 @@
                         </div>
                         <div class="release-body">
                             ${latestBody ? `<p>${latestBody}</p>` : ''}
-                            <a href="${domain}/sulingai-wza-${latestVersion}.apk" class="download-btn">📥 下载最新版 APK</a>
-                            <a href="${latest.html_url}" target="_blank" class="download-btn" style="margin-left: 10px; background: linear-gradient(135deg, #6b7280, #4b5563);">🔗 GitHub Release</a>
+                            <div class="download-row">
+                                <a href="${domain}/sulingai-wza-${latestVersion}.apk" class="download-btn">📥 下载最新版 APK</a>
+                                <div class="qr-code">
+                                    <img src="${domain}/latest-qr.png" alt="扫码下载" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(domain + '/sulingai-wza-' + latestVersion + '.apk')}'">
+                                    <span>扫码下载</span>
+                                </div>
+                            </div>
+                            <a href="${latest.html_url}" target="_blank" style="display: inline-block; margin-top: 12px; color: var(--primary); text-decoration: none; font-size: 0.85rem; font-weight: 500;">🔗 GitHub Release 页面</a>
                         </div>
                     </div>
                 `;
