@@ -11,7 +11,7 @@ android {
         minSdkVersion 24
         targetSdkVersion 30
         versionCode 30000
-        versionName "1.0.0"
+        versionName project.hasProperty("versionName") ? project.property("versionName") : "1.0.0"
     }
 
     buildTypes {
