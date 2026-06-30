@@ -67,11 +67,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          NOTES=$(cat changelog.txt)
+          {
+            echo "## 版本 ${{ steps.version.outputs.version_name }}"
+            echo ""
+            cat changelog.txt
+          } > release_notes.md
           gh release create ${{ steps.version.outputs.tag_name }} \
             app/build/outputs/apk/debug/sulingai-wza-${{ steps.version.outputs.version_name }}.apk \
             --title "素灵智能 ${{ steps.version.outputs.version_name }}" \
-            --notes "## 版本 ${{ steps.version.outputs.version_name }}\n\n$NOTES"
+            --notes-file release_notes.md
 
       - name: Prepare Pages
         run: |
