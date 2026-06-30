@@ -18,6 +18,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch Tags
+        run: git fetch --tags
 
       - name: Extract Version
         id: version
@@ -48,9 +53,11 @@ jobs:
 
       - name: Generate Changelog
         run: |
-          LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          CURRENT_TAG=$(echo "${{ github.ref_name }}" | sed 's/^v//')
+          # Find previous tag by sorting all tags and taking the one before current
+          LAST_TAG=$(git tag --sort=-version:refname | grep -v "^v${CURRENT_TAG}$" | head -1 || echo "")
           if [ -n "$LAST_TAG" ]; then
-            CHANGELOG=$(git log $LAST_TAG..HEAD --pretty=format:"- %s")
+            CHANGELOG=$(git log "${LAST_TAG}..HEAD" --pretty=format:"- %s")
           else
             CHANGELOG="- Initial release"
           fi
