@@ -1,6 +1,8 @@
 package org.yameida.worktool.utils
 
+import android.provider.Settings
 import com.blankj.utilcode.util.LogUtils
+import com.blankj.utilcode.util.Utils
 import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONObject
@@ -48,6 +50,9 @@ object BotWebSocketClient {
             LogUtils.e("BotWebSocket: 回调地址为空，跳过连接")
             return
         }
+
+        // 确保 robotId 已设置（自动使用 Android ID）
+        ensureRobotId()
 
         val url = wsUrl.replaceFirst("http://", "ws://").replaceFirst("https://", "wss://")
             .let { if (!it.endsWith("/ws")) "$it/ws" else it }
@@ -229,6 +234,8 @@ object BotWebSocketClient {
             return
         }
 
+        ensureRobotId()
+
         try {
             val lastMessage = messageList.lastOrNull() ?: return
             val spoken = lastMessage.itemMessageList.lastOrNull()?.text ?: ""
@@ -394,5 +401,32 @@ object BotWebSocketClient {
             LogUtils.e("getLanIp error", e)
         }
         return "unknown"
+    }
+
+    /**
+     * 获取设备 Android ID（设备唯一标识）
+     */
+    private fun getAndroidId(): String {
+        return try {
+            val contentResolver = Utils.getApp().contentResolver
+            val id = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+            if (!id.isNullOrEmpty()) id else "unknown"
+        } catch (e: Exception) {
+            LogUtils.e("getAndroidId error", e)
+            "unknown"
+        }
+    }
+
+    /**
+     * 确保 robotId 已设置：如果 SP 中为空，自动写入 Android ID
+     */
+    private fun ensureRobotId() {
+        if (Constant.robotId.isBlank()) {
+            val androidId = getAndroidId()
+            if (androidId != "unknown") {
+                Constant.robotId = androidId
+                LogUtils.i("BotWebSocket: 自动设置 robotId 为 Android ID: $androidId")
+            }
+        }
     }
 }
