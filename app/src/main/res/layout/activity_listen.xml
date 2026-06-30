@@ -83,7 +83,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="1.申请链接号后在下方填写并点击保存"
+                        android:text="1.设备编号已自动获取，无需手动输入"
                         android:textColor="@color/color_333333"
                         android:textSize="@dimen/setting_start_font_size" />
 
@@ -322,15 +322,15 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="链接号"
+                        android:text="设备编号（自动获取）"
                         android:textColor="@color/color_333333"
                         android:textSize="@dimen/setting_start_font_size" />
 
-                    <EditText
-                        android:id="@+id/et_channel"
+                    <TextView
+                        android:id="@+id/tv_deviceId"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="请输入申请的机器人ID"
+                        android:text="加载中..."
                         android:textColor="@color/color_999999"
                         android:textSize="@dimen/setting_end_font_size" />
 
@@ -342,19 +342,6 @@
                 android:layout_height="match_parent"
                 android:layout_marginTop="15dp"
                 android:orientation="vertical">
-
-                <Button
-                    android:id="@+id/bt_save"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:background="@drawable/comment_red_btn"
-                    android:paddingStart="50dp"
-                    android:paddingEnd="50dp"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/white"
-                    android:text="保存" />
 
 
             </LinearLayout>

@@ -1,6 +1,8 @@
 package org.yameida.worktool.activity
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.view.WindowManager
 import android.widget.CompoundButton
@@ -87,22 +89,9 @@ class ListenActivity : AppCompatActivity() {
         iv_settings.setOnClickListener {
             SettingsActivity.enterActivity(this)
         }
-        et_channel.setText(Constant.robotId)
-        bt_save.setOnClickListener {
-            val channel = et_channel.text.toString().trim()
-            Constant.robotId = channel
-            ToastUtils.showLong("保存成功")
-            sendBroadcast(Intent(Constant.WEWORK_NOTIFY).apply {
-                putExtra("type", "modify_channel")
-            })
-            HttpUtil.getMyConfig(toast = false)
-            // 本地模式下更换链接号后重连 Bot WebSocket
-            if (Constant.useLocalMode) {
-                BotWebSocketClient.disconnect()
-                BotWebSocketClient.connect()
-            }
-            MobclickAgent.onProfileSignIn(channel)
-        }
+        // 设备编号：自动获取 Android ID，脱敏展示
+        val deviceId = getAndroidId()
+        tv_deviceId.text = if (deviceId.isNotBlank()) maskDeviceId(deviceId) else "获取失败"
         refreshHostDisplay()
         tv_host.setOnClickListener {
             if (Constant.useLocalMode) {
@@ -154,14 +143,35 @@ class ListenActivity : AppCompatActivity() {
         SPUtils.getInstance().put("hook", hook)
     }
 
+    /**
+     * 脱敏展示设备 ID：保留前 4 位和后 4 位，中间用 **** 替代
+     * 例如：a1b2c3d4e5f67890 → a1b2****7890
+     */
+    private fun maskDeviceId(id: String): String {
+        if (id.length <= 8) {
+            return id.take(2) + "****" + id.takeLast(2)
+        }
+        return id.take(4) + "****" + id.takeLast(4)
+    }
+
+    /**
+     * 获取设备唯一标识 Android ID
+     */
+    private fun getAndroidId(): String {
+        return try {
+            Settings.Secure.getString(Utils.getApp().contentResolver, Settings.Secure.ANDROID_ID)
+                ?: ""
+        } catch (e: Exception) {
+            LogUtils.e("getAndroidId error", e)
+            ""
+        }
+    }
+
     private fun initAccessibility() {
         sw_accessibility.setOnCheckedChangeListener(CompoundButton.OnCheckedChangeListener { buttonView, isChecked ->
             LogUtils.i("sw_accessibility onCheckedChanged: $isChecked")
             if (isChecked) {
-                if (Constant.robotId.isBlank()) {
-                    sw_accessibility.isChecked = false
-                    ToastUtils.showLong("请先填写并保存链接号~")
-                } else if (!PermissionHelper.isAccessibilitySettingOn()) {
+                if (!PermissionHelper.isAccessibilitySettingOn()) {
                     if (SPUtils.getInstance().getBoolean("risk", false)) {
                         if (riskRetry > 10) {
                             ToastUtils.showLong("再点${20 - riskRetry}次 允许本次运行")
@@ -228,7 +238,7 @@ class ListenActivity : AppCompatActivity() {
         }, Context.BIND_AUTO_CREATE)
         //开启屏幕录制权限
         if (MediaProjectionHolder.mMediaProjection == null) {
-            bt_save.postDelayed({
+            Handler(Looper.getMainLooper()).postDelayed({
                 fastStartActivity(this, GetScreenShotActivity::class.java)
             }, 1000)
         }
@@ -335,8 +345,8 @@ class ListenActivity : AppCompatActivity() {
                 .setNegativeButton("", null)
                 .setPositiveButton("", null)
         val show = positiveButton.show()
-        bt_save.postDelayed({ show.dismiss() }, 5000)
-        bt_save.postDelayed({
+        Handler(Looper.getMainLooper()).postDelayed({ show.dismiss() }, 5000)
+        Handler(Looper.getMainLooper()).postDelayed({
             packageManager.getLaunchIntentForPackage(Constant.PACKAGE_NAMES)?.apply {
                 this.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 startActivity(this)
