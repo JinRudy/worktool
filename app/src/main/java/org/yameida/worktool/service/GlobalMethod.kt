@@ -112,9 +112,11 @@ private fun isBottomTab(item: AccessibilityNodeInfo): Boolean {
     val rect = Rect()
     item.getBoundsInScreen(rect)
     val screenHeight = ScreenUtils.getScreenHeight()
-    // tab 应该位于屏幕底部 15% 区域内
-    if (rect.top < screenHeight * 0.75) return false
+    // 底部 tab 的中心点应该位于屏幕底部 30% 区域内，避免误判为中部文字
+    if (rect.centerY() < screenHeight * 0.70) return false
     val childCount = item.parent?.parent?.parent?.childCount
+    // 如果位置明显在底部，放宽对旧版 childCount 的强依赖；否则回退使用旧结构判断
+    if (rect.centerY() >= screenHeight * 0.85) return true
     return childCount == 4 || childCount == 5
 }
 

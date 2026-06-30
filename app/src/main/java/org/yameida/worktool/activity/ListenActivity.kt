@@ -63,11 +63,23 @@ class ListenActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        refreshHostDisplay()
         sw_overlay.isChecked = Settings.canDrawOverlays(Utils.getApp()) && FlowPermissionHelper.canBackgroundStart(Utils.getApp())
         sw_accessibility.isChecked = PermissionHelper.isAccessibilitySettingOn()
         if (needToWork) {
             needToWork = false
             goToWork()
+        }
+    }
+
+    /**
+     * 刷新环境信息显示：本地模式下显示 localCallbackUrl，普通模式显示 host
+     */
+    private fun refreshHostDisplay() {
+        tv_host.text = if (Constant.useLocalMode) {
+            Constant.localCallbackUrl.ifBlank { "本地模式（未配置 Bot 地址）" }
+        } else {
+            Constant.host
         }
     }
 
@@ -84,9 +96,14 @@ class ListenActivity : AppCompatActivity() {
                 putExtra("type", "modify_channel")
             })
             HttpUtil.getMyConfig(toast = false)
+            // 本地模式下更换链接号后重连 Bot WebSocket
+            if (Constant.useLocalMode) {
+                BotWebSocketClient.disconnect()
+                BotWebSocketClient.connect()
+            }
             MobclickAgent.onProfileSignIn(channel)
         }
-        tv_host.text = Constant.host
+        refreshHostDisplay()
         tv_host.setOnClickListener {
             showSelectHostDialog()
         }
@@ -217,7 +234,7 @@ class ListenActivity : AppCompatActivity() {
                 .setTitle(getString(R.string.host_list))
                 .addItems(hostArray) { dialog, which ->
                     Constant.host = hostArray[which]
-                    tv_host.text = hostArray[which]
+                    refreshHostDisplay()
                     HostTestHelper.testWs()
                     dialog.dismiss()
                 }
@@ -239,7 +256,7 @@ class ListenActivity : AppCompatActivity() {
                 if (hostList.size > 1) {
                     hostList.remove(Constant.host)
                     Constant.host = hostList.elementAt(0)
-                    tv_host.text = Constant.host
+                    refreshHostDisplay()
                     HostTestHelper.testWs()
                     SPUtils.getInstance().put("host_list", hostList)
                     dialog.dismiss()
@@ -256,7 +273,7 @@ class ListenActivity : AppCompatActivity() {
                         hostList.add(text.toString())
                         SPUtils.getInstance().put("host_list", hostList)
                         Constant.host = text.toString()
-                        tv_host.text = text
+                        refreshHostDisplay()
                         HostTestHelper.testWs()
                         dialog.dismiss()
                     } else {

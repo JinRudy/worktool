@@ -29,6 +29,7 @@ object WeworkLoopImpl {
 
     val stopWords = arrayListOf("解析中")
     var logIndex = 0
+    private var lastKeepAliveTime = 0L
 
     fun mainLoop() {
         if (!WeworkController.enableLoopRunning)
@@ -522,7 +523,9 @@ object WeworkLoopImpl {
             LogUtils.e("读取聊天列表失败")
             error("读取聊天列表失败")
         }
-        if (logIndex % 600 == 0) {
+        val now = System.currentTimeMillis()
+        if (now - lastKeepAliveTime > 10 * 60 * 1000) {
+            lastKeepAliveTime = now
             //让企微切换页面使APP保持活跃
             goHomeTab("通讯录")
             goHomeTab("消息")

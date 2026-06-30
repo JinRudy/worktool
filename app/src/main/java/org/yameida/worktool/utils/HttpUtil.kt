@@ -34,6 +34,17 @@ object HttpUtil {
             }
             return
         }
+        // 本地模式绕过云端配置接口
+        if (Constant.useLocalMode) {
+            if (Constant.localCallbackUrl.isBlank()) {
+                if (toast) {
+                    ToastUtils.showLong("本地模式已开启，请先配置 Bot 服务器地址")
+                }
+            } else {
+                LogUtils.i("本地模式：跳过云端配置拉取")
+            }
+            return
+        }
         try {
             val conn = (URL(Constant.getMyConfig()).openConnection() as HttpURLConnection).apply {
                 connectTimeout = 10000
@@ -44,7 +55,9 @@ object HttpUtil {
 
             val commonResult = GsonUtils.fromJson(response, GetMyConfigResult::class.java)
             if (commonResult.code != 200) {
-                ToastUtils.showLong("获取配置失败 请检查机器人ID")
+                if (toast) {
+                    ToastUtils.showLong("获取配置失败 请检查机器人ID")
+                }
                 LogUtils.e("获取配置失败 请检查机器人ID")
                 return
             }
@@ -74,7 +87,9 @@ object HttpUtil {
                 }
             }
         } catch (e: Exception) {
-            ToastUtils.showLong("获取配置失败 请检查机器人ID")
+            if (toast) {
+                ToastUtils.showLong("获取配置失败 请检查机器人ID")
+            }
             LogUtils.e("获取配置失败", e)
         }
     }
