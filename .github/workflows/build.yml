@@ -46,14 +46,25 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug -PversionName=${{ steps.version.outputs.version_name }} -PversionCode=${{ steps.version.outputs.version_code }}
 
+      - name: Generate Changelog
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            CHANGELOG=$(git log $LAST_TAG..HEAD --pretty=format:"- %s")
+          else
+            CHANGELOG="- Initial release"
+          fi
+          echo "$CHANGELOG" > changelog.txt
+
       - name: Create GitHub Release and Upload APK
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          NOTES=$(cat changelog.txt)
           gh release create ${{ steps.version.outputs.tag_name }} \
             app/build/outputs/apk/debug/sulingai-wza-${{ steps.version.outputs.version_name }}.apk \
             --title "素灵智能 ${{ steps.version.outputs.version_name }}" \
-            --notes "## 版本 ${{ steps.version.outputs.version_name }}\n- Commit: ${{ github.sha }}"
+            --notes "## 版本 ${{ steps.version.outputs.version_name }}\n\n$NOTES"
 
       - name: Prepare Pages
         run: |

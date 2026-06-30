@@ -71,6 +71,10 @@ class ListenActivity : AppCompatActivity() {
         if (needToWork) {
             needToWork = false
             goToWork()
+        } else if (!hasAutoStarted && sw_accessibility.isChecked) {
+            // 无障碍已开启但 openWs 广播未到达（如更新后首次打开），自动启动主功能
+            hasAutoStarted = true
+            Handler(Looper.getMainLooper()).postDelayed({ goToWork() }, 1500)
         }
     }
 
@@ -336,6 +340,7 @@ class ListenActivity : AppCompatActivity() {
     }
 
     private var needToWork = false
+    private var hasAutoStarted = false
 
     private fun goToWork() {
         val positiveButton =
