@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
+import android.view.View
 import android.view.WindowManager
 import android.widget.CompoundButton
 import androidx.appcompat.app.AppCompatActivity
@@ -82,8 +83,8 @@ class SettingsActivity : AppCompatActivity() {
         rl_reply_strategy.setOnClickListener { showReplyStrategyDialog() }
         rl_log.setOnClickListener { showLogDialog() }
         rl_update.setOnClickListener { showUpdateDialog() }
-        rl_donate.setOnClickListener { showDonateDialog() }
-        rl_share.setOnClickListener { showShareDialog() }
+        rl_donate.visibility = View.GONE
+        rl_share.visibility = View.GONE
         rl_advance.setOnClickListener { SettingsAdvanceActivity.enterActivity(this) }
         freshOpenFlow()
         bt_open_flow.setOnClickListener {

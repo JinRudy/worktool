@@ -105,10 +105,18 @@ class ListenActivity : AppCompatActivity() {
         }
         refreshHostDisplay()
         tv_host.setOnClickListener {
-            showSelectHostDialog()
+            if (Constant.useLocalMode) {
+                showInputLocalCallbackUrlDialog()
+            } else {
+                showSelectHostDialog()
+            }
         }
         tv_host.setOnLongClickListener {
-            showInputHostDialog()
+            if (Constant.useLocalMode) {
+                showInputLocalCallbackUrlDialog()
+            } else {
+                showInputHostDialog()
+            }
             true
         }
         val version = "${AppUtils.getAppVersionName()}     Android ${DeviceUtils.getSDKVersionName()} ${DeviceUtils.getManufacturer()} ${DeviceUtils.getModel()}"
@@ -278,6 +286,37 @@ class ListenActivity : AppCompatActivity() {
                         dialog.dismiss()
                     } else {
                         ToastUtils.showLong("格式异常！")
+                    }
+                } else {
+                    ToastUtils.showLong("请勿为空！")
+                }
+            }
+            .create(R.style.QMUI_Dialog).show()
+    }
+
+    /**
+     * 本地模式下输入/修改 Bot 回调地址
+     */
+    private fun showInputLocalCallbackUrlDialog() {
+        ToastUtils.showLong("请输入本地 Bot 服务器地址")
+        val builder = QMUIDialog.EditTextDialogBuilder(this)
+        builder.setTitle(getString(R.string.tip))
+            .setPlaceholder("http://192.168.1.100:8000")
+            .setDefaultText(Constant.localCallbackUrl)
+            .setInputType(InputType.TYPE_CLASS_TEXT)
+            .addAction(getString(R.string.cancel)) { dialog, index -> dialog.dismiss() }
+            .addAction(getString(R.string.add)) { dialog, index ->
+                val text = builder.editText.text
+                if (text != null && text.isNotEmpty()) {
+                    if (text.matches("https?://[^/]+.*".toRegex())) {
+                        Constant.localCallbackUrl = text.toString()
+                        refreshHostDisplay()
+                        // 本地模式下更换 Bot 地址后重连 WebSocket
+                        BotWebSocketClient.disconnect()
+                        BotWebSocketClient.connect()
+                        dialog.dismiss()
+                    } else {
+                        ToastUtils.showLong("格式异常，请输入 http:// 或 https:// 开头的地址！")
                     }
                 } else {
                     ToastUtils.showLong("请勿为空！")
