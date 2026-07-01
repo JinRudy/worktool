@@ -21,9 +21,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Fetch Tags
-        run: git fetch --tags
-
       - name: Extract Version
         id: version
         run: |
@@ -34,7 +31,7 @@ jobs:
           MAJOR=$(echo "$VERSION_NAME" | cut -d. -f1)
           MINOR=$(echo "$VERSION_NAME" | cut -d. -f2)
           PATCH=$(echo "$VERSION_NAME" | cut -d. -f3)
-          VERSION_CODE=$((30000 + MAJOR * 100 + MINOR * 10 + PATCH))
+          VERSION_CODE=$((30000 + MAJOR * 10000 + MINOR * 100 + PATCH - 10000))
           echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
 
       - name: Set up JDK 11
@@ -137,7 +134,7 @@ jobs:
             MAJOR=$(echo "$VERSION_NO_V" | cut -d. -f1)
             MINOR=$(echo "$VERSION_NO_V" | cut -d. -f2)
             PATCH=$(echo "$VERSION_NO_V" | cut -d. -f3)
-            VERSION_CODE=$((30000 + MAJOR * 100 + MINOR * 10 + PATCH))
+            VERSION_CODE=$((30000 + MAJOR * 10000 + MINOR * 100 + PATCH - 10000))
             printf '{"version":"%s","version_code":%d,"download_url":"https://sulingai-wza.minifog.org.cn/latest.apk","release_notes":"%s"}\n' \
               "$VERSION_NO_V" "$VERSION_CODE" "$(echo "$RELEASE_NOTES" | head -1)" > pages/version.json
             # 生成高分辨率二维码（与企业微信主题色一致）
