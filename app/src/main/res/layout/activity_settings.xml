@@ -652,6 +652,18 @@
                     android:text="开启主功能"
                     />
 
+                <CheckBox
+                    android:id="@+id/cb_auto_inspection"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="20dp"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginEnd="20dp"
+                    android:padding="8dp"
+                    android:text="自动巡检（开启后不再主动检测新消息）"
+                    android:textSize="14sp"
+                    />
+
                 <Button
                     android:id="@+id/bt_open_flow"
                     style="@style/rec_top_btn"

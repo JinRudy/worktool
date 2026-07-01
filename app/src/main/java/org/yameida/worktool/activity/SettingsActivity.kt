@@ -55,6 +55,7 @@ class SettingsActivity : AppCompatActivity() {
         super.onResume()
         freshOpenFlow()
         freshOpenMain()
+        freshAutoInspection()
         // 从安装权限设置页返回后，若已授权则继续安装暂存的 APK
         AutoUpdateChecker.resumeInstall(this)
     }
@@ -119,6 +120,15 @@ class SettingsActivity : AppCompatActivity() {
                 }
             }
         }
+
+        // 自动巡检
+        freshAutoInspection()
+        cb_auto_inspection.setOnCheckedChangeListener(CompoundButton.OnCheckedChangeListener { buttonView, isChecked ->
+            LogUtils.i("cb_auto_inspection onCheckedChanged: $isChecked")
+            Constant.autoInspection = isChecked
+            SPUtils.getInstance().put("autoInspection", isChecked)
+            ToastUtils.showLong("自动巡检" + if (isChecked) "已开启，不再主动检测新消息" else "已关闭")
+        })
     }
 
     private fun initData() {
@@ -200,6 +210,10 @@ class SettingsActivity : AppCompatActivity() {
             bt_open_main.setBackgroundResource(R.drawable.comment_red_btn)
             bt_open_main.text = "开启主功能"
         }
+    }
+
+    private fun freshAutoInspection() {
+        cb_auto_inspection.isChecked = Constant.autoInspection
     }
 
     private fun updateRobotReplyStrategy(type: Int) {

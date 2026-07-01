@@ -138,6 +138,13 @@ object Constant {
             SPUtils.getInstance().put("apiDuplicationFilter", value)
         }
 
+    // 自动巡检：勾选后不再主动巡检新消息，仅响应服务端 HTTP 推送
+    var autoInspection: Boolean
+        get() = SPUtils.getInstance().getBoolean("autoInspection", false)
+        set(value) {
+            SPUtils.getInstance().put("autoInspection", value)
+        }
+
     fun getWsUrl() = "$host/webserver/wework/$robotId"
 
     fun getCheckUpdateUrl() = "${getBaseUrl()}/appUpdate/checkUpdate"

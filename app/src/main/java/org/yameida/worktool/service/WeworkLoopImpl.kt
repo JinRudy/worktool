@@ -43,9 +43,14 @@ object WeworkLoopImpl {
             while (mainLoopRunning) {
                 if (!isAtHome()) {
                     LogUtils.d("当前在房间: ")
-                    getChatMessageList()
-                    if (mainLoopRunning) {
+                    if (Constant.autoInspection) {
+                        // 自动巡检模式下，不在聊天详情页时不主动读取消息
                         goHome()
+                    } else {
+                        getChatMessageList()
+                        if (mainLoopRunning) {
+                            goHome()
+                        }
                     }
                     continue
                 }
@@ -471,6 +476,7 @@ object WeworkLoopImpl {
      */
     private fun getChatroomList(): Boolean {
         if (Constant.autoReply == 0) return true
+        if (Constant.autoInspection) return true // 自动巡检模式下，不主动检测新消息
         if (!isAtHome()) { goHome() }
 
         if (logIndex++ % 30 == 0) {
